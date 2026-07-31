@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoVal</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <form id="carForm">
+        <h3 class="title">Input Form</h3>
+
+        <div class="form-group">
+            <label for="brand">Brand</label>
+            <select id="brand" required>
+                <option value="" disabled selected>Select a brand</option>
+                <option value="luxury">Luxury (e.g., BMW, Mercedes)</option>
+                <option value="commuter">Commuter (e.g., Toyota, Honda)</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="year">Year</label>
+            <input type="number" id="year" placeholder="e.g. 2018" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="mileage">Mileage</label>
+            <input type="number" id="mileage" placeholder="e.g. 45000" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="transmission">Transmission</label>
+            <select id="transmission" required>
+                <option value="" disabled selected>Select transmission</option>
+                <option value="auto">Automatic</option>
+                <option value="manual">Manual</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="condition">Condition</label>
+            <select id="condition" required>
+                <option value="" disabled selected>Select condition</option>
+                <option value="excellent">Excellent</option>
+                <option value="good">Good</option>
+                <option value="fair">Fair</option>
+                <option value="poor">Poor</option>
+            </select>
+        </div>
+        
+        <button type="submit" id="predictBtn">Estimate Value</button>
+    </form>
+
+    <div class="results">
+        <div id="result">
+            Results appear here.
+        </div>
+        <div class="chart-div">
+            <canvas id="depreciationChart"></canvas>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

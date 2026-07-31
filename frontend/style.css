@@ -1,0 +1,99 @@
+:root {
+    --accent1: rgb(105, 105, 255);
+    --accent2: pink;
+    --bg: #c3c3c3;
+    --border: white;
+    --fg: #0d1117;
+    --bordermuted: rgb(237, 237, 237);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    color: var(--fg);
+}
+
+body { 
+    font-family: sans-serif; 
+    margin: 40px auto; 
+    line-height: 1.6;
+    background-color: var(--bg);
+
+    display: flex;
+    flex-direction: row;
+
+    justify-content: center;
+    align-items: start;
+    gap: 1rem;
+}
+
+form, .results {
+    padding: 1.5rem;
+    background-color: var(--border);
+    border-radius: 10px;
+    width: 400px;
+}
+
+.form-group { 
+    margin-bottom: 15px; 
+}
+
+label { 
+    display: block; 
+    font-weight: bold; 
+}
+
+.title {
+    margin-bottom: 1rem;
+}
+
+input, select { 
+    width: 100%;
+    padding: 8px; 
+    margin-top: 5px; 
+    box-sizing: border-box;
+    border-radius: 6px;
+    background-color: var(--bordermuted);
+    border-style: groove;
+}
+
+button { 
+    padding: 10px 15px; 
+    background: var(--accent1);
+    color: white;
+    border: none;
+    border-radius: 6px; 
+    cursor: pointer; 
+    font-size: 16px; 
+}
+
+#result { 
+    padding: 15px; 
+    border-left: 4px solid var(--accent1); 
+    background: var(--bordermuted); 
+}
+#result span.fair_price {
+    color: green;
+}
+#result span.great_deal {
+    color: purple;
+}
+#result span.overpriced_risk {
+    color: red;
+}
+
+.chart-div {
+    margin: 1rem 0;
+    min-height: 200px;
+}
+
+@media screen and (max-width: 800px){
+    body {
+        flex-direction: column;
+        align-items: center;
+    }
+    form, .results {
+        width: 100%;
+    }
+}
