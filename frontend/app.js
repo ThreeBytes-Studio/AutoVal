@@ -1,5 +1,7 @@
-const BACKEND_URL = 'https://autoval-test.onrender.com/predict' // Temporary js backend ko, papalitan to. Galing sya dito: https://github.com/Naourr/autoval-test/blob/main/server.js
-
+const BACKEND_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://127.0.0.1:8000'
+    : 'https://autoval-test.onrender.com';
+    
 const carForm = document.getElementById('carForm')
 const result = document.getElementById('result')
 
@@ -43,7 +45,7 @@ carForm.addEventListener('submit', async (e) => {
     result.innerHTML = '<em>Connecting to server..</em>'
 
     try {
-        const response = await fetch(BACKEND_URL, {
+        const response = await fetch(`${BACKEND_URL}/predict`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({brand, year, mileage, transmission, condition})
@@ -69,11 +71,9 @@ carForm.addEventListener('submit', async (e) => {
     }
 })
 
-async function loadMarketChart(brand, condition, year, mileage, transmission) {
-    const TRENDS_URL = 'https://autoval-test.onrender.com/market-trends'; // Temporary js backend ko ulit, papalitan to.
-
+async function loadMarketChart(brand, year, mileage, transmission, condition) {
     try {
-        const response = await fetch(TRENDS_URL, {
+        const response = await fetch(`${BACKEND_URL}/market-trends`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ brand, year, mileage, transmission, condition })
