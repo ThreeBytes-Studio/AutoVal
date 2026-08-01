@@ -67,7 +67,7 @@ carForm.addEventListener('submit', async (e) => {
 		loadMarketChart(brand, year, mileage, transmission, condition)
     } catch (error) {
         console.error('Fetch operation error:', error)
-        result.innerHTML = `<span style="color: red"><strong>Error:</strong> Could not reach backend server. Did you start server.js in your terminal?</span>`
+        result.innerHTML = `<span style="color: red"><strong>Error:</strong> Could not reach backend server. Did you start app.py in your terminal?</span>`
     }
 })
 
