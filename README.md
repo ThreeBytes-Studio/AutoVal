@@ -10,14 +10,17 @@ Make sure you have **Python 3** installed on your computer. You can check by run
 
 ### 🐍 1. Start the Backend Server
 1. Open your terminal and navigate into the backend folder:
+    ```
    cd backend
-   
+    ```   
 2. Install the required backend dependencies (only need to do this the first time):
+    ```   
    pip install -r requirements.txt
-   
+    ```   
 3. Boot up the local server by running:
+    ```   
    python -m uvicorn app:app --reload
-   
+    ```   
    *Keep this terminal open! If you close it, the backend server turns off.*
    *(You can verify it's working by going to http://127.0.0.1:8000/docs in your browser.)*
 
