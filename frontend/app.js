@@ -1,7 +1,7 @@
 const BACKEND_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://127.0.0.1:8000'
-    : 'https://autoval-test.onrender.com';
-    
+    : 'https://autoval-8cs7.onrender.com';
+
 const carForm = document.getElementById('carForm')
 const result = document.getElementById('result')
 
