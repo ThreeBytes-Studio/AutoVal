@@ -1,10 +1,19 @@
 :root {
-    --accent1: rgb(105, 105, 255);
+    --accent1: green;
     --accent2: pink;
-    --bg: #c3c3c3;
-    --border: white;
-    --fg: #0d1117;
-    --bordermuted: rgb(237, 237, 237);
+
+    --bg: #0d1117;
+    --bg-dark: #010409;
+    --card: #0d1117;
+    --card-muted: #151b23;
+    --border: #3d444d;
+    --fg: #f0f6fc;
+    --fg-muted: #9198a1;
+
+    --btn-bg: #212830;
+    --btn-fg: #f0f6fc;
+    --btn-bg-hover: #262c36;
+
 }
 
 * {
@@ -30,13 +39,19 @@ body {
 
 form, .results {
     padding: 1.5rem;
-    background-color: var(--border);
+    background-color: var(--card);
     border-radius: 10px;
     width: 400px;
+    border: 1px solid var(--border);
 }
 
 .form-group { 
     margin-bottom: 15px; 
+}
+.dbl-form-group {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
 }
 
 label { 
@@ -48,30 +63,53 @@ label {
     margin-bottom: 1rem;
 }
 
+input:focus {
+    outline: none;
+}
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
 input, select { 
     width: 100%;
     padding: 8px; 
     margin-top: 5px; 
     box-sizing: border-box;
     border-radius: 6px;
-    background-color: var(--bordermuted);
+    background-color: var(--card-muted);
     border-style: groove;
 }
 
 button { 
     padding: 10px 15px; 
     background: var(--accent1);
-    color: white;
+    color: var(--btn-fg);
     border: none;
     border-radius: 6px; 
     cursor: pointer; 
     font-size: 16px; 
+    /* border: 1px solid var(--border); */
 }
+/* button:hover {
+    background-color: var(--btn-bg-hover);
+} */
 
 #result { 
     padding: 15px; 
     border-left: 4px solid var(--accent1); 
-    background: var(--bordermuted); 
+    background: var(--card-muted); 
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+#result p {
+    font-size: 1.1rem;
 }
 #result span.fair_price {
     color: green;
