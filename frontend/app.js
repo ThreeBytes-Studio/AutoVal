@@ -5,9 +5,12 @@ const BACKEND_URL = (window.location.hostname === 'localhost' || window.location
 
 // Color toggling
 const themes = ['dark', 'dark-soft', 'light', 'midnight']
-let currentThemeIndex = themes.indexOf(document.body.dataset.theme) === -1 
-    ? 0 
-    : themes.indexOf(document.body.dataset.theme)
+const savedTheme = localStorage.getItem('user-theme')
+let currentThemeIndex = themes.includes(savedTheme) 
+    ? themes.indexOf(savedTheme) 
+    : (themes.indexOf(document.body.dataset.theme) === -1 ? 0 : themes.indexOf(document.body.dataset.theme))
+
+document.body.dataset.theme = themes[currentThemeIndex]
 
 const colorToggle = document.getElementById('color-toggle')
 colorToggle.addEventListener('click', () => {
@@ -16,8 +19,11 @@ colorToggle.addEventListener('click', () => {
     
     document.body.dataset.theme = nextTheme
 
-    const freshFgMuted = getComputedStyle(document.body).getPropertyValue('--fg-muted').trim() || '#656d76'
-    const freshBorder = getComputedStyle(document.body).getPropertyValue('--border').trim() || 'rgba(0,0,0,0.1)'
+    localStorage.setItem('user-theme', nextTheme)
+    
+    const freshFgMuted = getComputedStyle(document.body).getPropertyValue('--fg-muted').trim()
+    const freshBorder = getComputedStyle(document.body).getPropertyValue('--border').trim()
+    const freshAccent = getComputedStyle(document.body).getPropertyValue('--chart-1').trim()
 
     if (myChart) {
         myChart.options.plugins.legend.labels.color = freshFgMuted
@@ -27,6 +33,9 @@ colorToggle.addEventListener('click', () => {
         
         myChart.options.scales.y.ticks.color = freshFgMuted
         myChart.options.scales.y.grid.color = freshBorder
+
+        myChart.data.datasets[0].borderColor = freshAccent
+        myChart.data.datasets[0].backgroundColor = `${freshAccent}1A`
         
         myChart.update()
     }
@@ -37,8 +46,9 @@ let myChart = null
 function initCharts() {
     const lineCtx = document.getElementById('depreciationChart').getContext('2d')
     
-    const fgMuted = getComputedStyle(document.body).getPropertyValue('--fg-muted').trim() || '#656d76'
-    const border = getComputedStyle(document.body).getPropertyValue('--border').trim() || 'rgba(255, 255, 255, 0.1)'
+    const fgMuted = getComputedStyle(document.body).getPropertyValue('--fg-muted').trim()
+    const border = getComputedStyle(document.body).getPropertyValue('--border').trim()
+    const accent = getComputedStyle(document.body).getPropertyValue('--chart-1').trim()
 
     myChart = new Chart(lineCtx, {
         type: 'line',
@@ -47,8 +57,8 @@ function initCharts() {
             datasets: [{
                 label: 'Market Price vs. Mileage Depreciation Curve',
                 data: [],
-                borderColor: '#3b82f6',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderColor: accent,
+                backgroundColor: `${accent}1A`,
                 borderWidth: 3,
                 tension: 0.3,
                 fill: true
