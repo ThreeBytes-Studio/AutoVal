@@ -1,13 +1,45 @@
+// Auto select backend url whether running locally or live.
 const BACKEND_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://127.0.0.1:8000'
     : 'https://autoval-8cs7.onrender.com'
 
-const carForm = document.getElementById('carForm')
-const result = document.getElementById('result')
+// Color toggling
+const themes = ['dark', 'dark-soft', 'light', 'midnight']
+let currentThemeIndex = themes.indexOf(document.body.dataset.theme) === -1 
+    ? 0 
+    : themes.indexOf(document.body.dataset.theme)
 
+const colorToggle = document.getElementById('color-toggle')
+colorToggle.addEventListener('click', () => {
+    currentThemeIndex = (currentThemeIndex + 1) % themes.length
+    const nextTheme = themes[currentThemeIndex]
+    
+    document.body.dataset.theme = nextTheme
+
+    const freshFgMuted = getComputedStyle(document.body).getPropertyValue('--fg-muted').trim() || '#656d76'
+    const freshBorder = getComputedStyle(document.body).getPropertyValue('--border').trim() || 'rgba(0,0,0,0.1)'
+
+    if (myChart) {
+        myChart.options.plugins.legend.labels.color = freshFgMuted
+        
+        myChart.options.scales.x.ticks.color = freshFgMuted
+        myChart.options.scales.x.grid.color = freshBorder
+        
+        myChart.options.scales.y.ticks.color = freshFgMuted
+        myChart.options.scales.y.grid.color = freshBorder
+        
+        myChart.update()
+    }
+})
+
+// Initialize blank chart/s
 let myChart = null
 function initCharts() {
     const lineCtx = document.getElementById('depreciationChart').getContext('2d')
+    
+    const fgMuted = getComputedStyle(document.body).getPropertyValue('--fg-muted').trim() || '#656d76'
+    const border = getComputedStyle(document.body).getPropertyValue('--border').trim() || 'rgba(255, 255, 255, 0.1)'
+
     myChart = new Chart(lineCtx, {
         type: 'line',
         data: {
@@ -26,38 +58,20 @@ function initCharts() {
             responsive: true,
             plugins: {
                 legend: {
-                    labels: {
-                        color: '#e2e8f0'
-                    }
+                    labels: { color: fgMuted }
                 }
             },
             scales: {
                 y: { 
                     beginAtZero: false, 
-                    title: { 
-                        display: true, 
-                        text: 'Estimated Value ($)',
-                        color: '#94a3b8'
-                    },
-                    ticks: {
-                        color: '#cbd5e1'
-                    },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    }
+                    title: { display: true, text: 'Estimated Value ($)', color: '#94a3b8' },
+                    ticks: { color: fgMuted },
+                    grid: { color: border }
                 },
                 x: { 
-                    title: { 
-                        display: true, 
-                        text: 'Odometer Mileage Status',
-                        color: '#94a3b8'
-                    },
-                    ticks: {
-                        color: '#cbd5e1'
-                    },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    }
+                    title: { display: true, text: 'Odometer Mileage Status', color: '#94a3b8' },
+                    ticks: { color: fgMuted },
+                    grid: { color: border }
                 }
             }
         }
@@ -65,6 +79,9 @@ function initCharts() {
 }
 initCharts()
 
+// On submit button click
+const carForm = document.getElementById('carForm')
+const result = document.getElementById('result')
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 carForm.addEventListener('submit', async (e) => {
     e.preventDefault()
@@ -105,6 +122,7 @@ carForm.addEventListener('submit', async (e) => {
     }
 })
 
+// Helper function on submit button click to load chart/s data.
 async function loadMarketChart(brand, year, mileage, transmission, condition) {
     try {
         const response = await fetch(`${BACKEND_URL}/market-trends`, {

@@ -1,7 +1,4 @@
-:root {
-    --accent1: green;
-    --accent2: pink;
-
+body[data-theme="dark"] {
     --bg: #0d1117;
     --bg-dark: #010409;
     --card: #0d1117;
@@ -10,10 +7,48 @@
     --fg: #f0f6fc;
     --fg-muted: #9198a1;
 
-    --btn-bg: #212830;
-    --btn-fg: #f0f6fc;
-    --btn-bg-hover: #262c36;
+    --btn-bg: #238636;
+    --btn-fg: #ffffff;
+    --btn-bg-hover: #2ea043;
+}
+body[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-dark: #f6f8fa;
+    --card: #ffffff;
+    --card-muted: #f6f8fa;
+    --border: #c1c8ce;
+    --fg: #1f2328;
+    --fg-muted: #656d76;
 
+    --btn-bg: #238636;
+    --btn-fg: #ffffff;
+    --btn-bg-hover: #2ea043;
+}
+body[data-theme="dark-soft"] {
+    --bg: #1f242c;
+    --bg-dark: #161b22;
+    --card: #1f242c;
+    --card-muted: #262c36;
+    --border: #38414e;
+    --fg: #e6edf3;
+    --fg-muted: #848d97;
+
+    --btn-bg: #347d39;      
+    --btn-fg: #ffffff;      
+    --btn-bg-hover: #46954a;
+}
+body[data-theme="midnight"] {
+    --bg: #0c101f;
+    --bg-dark: #050714;
+    --card: #0c101f;
+    --card-muted: #12182d;
+    --border: #1f294d;
+    --fg: #e6edf3;
+    --fg-muted: #798cd6;
+
+    --btn-bg: #8957e5;
+    --btn-fg: #ffffff;
+    --btn-bg-hover: #7a4ab3;
 }
 
 * {
@@ -25,18 +60,51 @@
 
 body { 
     font-family: sans-serif; 
-    margin: 40px auto; 
+    margin: 0 auto; 
     line-height: 1.6;
-    background-color: var(--bg);
+    background-color: var(--bg-dark);
+    padding: 1rem;
+}
 
+main {
+    margin-top: 1rem;
     display: flex;
     flex-direction: row;
 
     justify-content: center;
     align-items: start;
     gap: 1rem;
+    width: 100%;
+    flex-wrap: wrap;
 }
 
+header {
+    background-color: var(--card);
+    padding: 8px 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+header span {
+    font-size: 1.4rem;
+    font-weight: bold;
+    margin-right: 10px;
+}
+header p {
+    font-size: 1rem;
+    color: var(--fg-muted);
+}
+#color-toggle {
+    height: 35px;
+    aspect-ratio: 1/1;
+    fill: var(--fg);
+    padding: 5px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+}
 form, .results {
     padding: 1.5rem;
     background-color: var(--card);
@@ -88,7 +156,7 @@ input, select {
 
 button { 
     padding: 10px 15px; 
-    background: var(--accent1);
+    background: var(--btn-bg);
     color: var(--btn-fg);
     border: none;
     border-radius: 6px; 
@@ -96,13 +164,13 @@ button {
     font-size: 16px; 
     /* border: 1px solid var(--border); */
 }
-/* button:hover {
+button:hover {
     background-color: var(--btn-bg-hover);
-} */
+}
 
 #result { 
     padding: 15px; 
-    border-left: 4px solid var(--accent1); 
+    border-left: 4px solid var(--btn-bg); 
     background: var(--card-muted); 
     display: flex;
     flex-direction: column;
