@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import math
+# import joblib         # Uncomment when model file is ready
+# import numpy as np    # Uncomment when model file is ready
 
 app = FastAPI()
 
@@ -20,6 +22,13 @@ class CarInput(BaseModel):
     transmission: str or None = None
     condition: str or None = None
 
+# Uncomment when model file is ready
+# try:
+#     model = joblib.load("car_model.joblib")
+# except Exception as e:
+#     print(f"ML Engine offline: {e}")
+#     model = None
+
 @app.get("/")
 def check_status():
     return {"status": "success", "message": "FastAPI engine matches server routing configuration."}
@@ -31,7 +40,25 @@ def predict_car_value(car: CarInput):
     car_mileage = int(car.mileage)
     age = max(0, current_year - car_year)
 
-    # Temporary formulas start ===================================================================
+    # Uncomment when model file is ready
+    # if model is not None:
+    #     features = np.array([[car.brand, car_year, car_mileage, car.transmission, car.condition]])
+    #     final_estimate = round(float(model.predict(features)[0]))
+    #     
+    #     return {
+    #         "success": True,
+    #         "brand": f"{car.brand.capitalize()} Vehicle",
+    #         "year": car_year,
+    #         "estimatedValue": f"${final_estimate:,}",
+    #         "dealMetrics": {"status": "fair_price", "label": "ML Predicted Market Price"},
+    #         "marketInsights": {
+    #             "averagePriceForYear": "Calculated by ML",
+    #             "depreciationRate": "Determined by ML data drift",
+    #             "mileageImpact": " factored into ML weights"
+    #         }
+    #     }
+
+    # Temporary formulas start (Delete when model file is ready) ===================================================================
     floor_price = 4000 if car.brand == 'luxury' else 2000
 
     # Vintage tier bypass calculation
@@ -93,7 +120,7 @@ def predict_car_value(car: CarInput):
     elif variance_percent < -0.15:
         deal_rating = "overpriced_risk"
         deal_label = "Below Market Average (High Wear Risk)"
-    # Temporary formulas end ===================================================================
+    # Temporary formulas end (Delete when model file is ready) ===================================================================
 
     return {
         "success": True,
@@ -113,7 +140,7 @@ def predict_car_value(car: CarInput):
 
 @app.post("/market-trends")
 def calculate_trends(car: CarInput):
-    # Temporary formulas start ===================================================================
+    # Temporary formulas start (Delete when model file is ready) ===================================================================
     # current_year = 2026
     # car_year = int(car.year) if car.year else 2026
     # age = max(0, current_year - car_year)
@@ -134,7 +161,7 @@ def calculate_trends(car: CarInput):
         baseline_floor = 4000 if car.brand == 'luxury' else 2000
         calculated_step = round(max(baseline_floor, starting_price * step_penalty))
         depreciation_prices.append(calculated_step)
-    # Temporary formulas end ===================================================================
+    # Temporary formulas end (Delete when model file is ready) ===================================================================
 
     return {
         "success": True,
