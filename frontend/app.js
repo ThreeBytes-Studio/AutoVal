@@ -96,11 +96,26 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 carForm.addEventListener('submit', async (e) => {
     e.preventDefault()
     const brand = document.getElementById('brand').value
-    const year = document.getElementById('year').value
-    const mileage = document.getElementById('mileage').value
+    const year = parseInt(document.getElementById('year').value)
+    const mileage = parseInt(document.getElementById('mileage').value)
     const transmission = document.getElementById('transmission').value
     const condition = document.getElementById('condition').value
 
+    const payload = {
+        manufacturer: brand,
+        year: year,
+        odometer: mileage,
+        transmission: transmission,
+        condition: condition,
+        model: "unknown",
+        
+        cylinders: "6 cylinders",
+        drive: "fwd",
+        size: "mid-size",
+        type: "sedan",
+        fuel: "gas",
+        title_status: "clean"
+    }
     result.innerHTML = '<em>Connecting to server..</em>'
 
     await delay(450)
@@ -109,22 +124,27 @@ carForm.addEventListener('submit', async (e) => {
         const response = await fetch(`${BACKEND_URL}/predict`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({brand, year, mileage, transmission, condition})
+            body: JSON.stringify(payload)
         })
 
         if (!response.ok) throw new Error('Network response failed server-side')
 
-		const data = await response.json()
-		const { brand: serverBrand, estimatedValue, dealMetrics, marketInsights } = data
+        const data = await response.json()
+        if (!data.success) {
+            result.innerHTML = `<span style="color: orange"><strong>Engine Warning:</strong> ${data.message}</span>`
+            return
+        }
+        const { brand: serverBrand, estimatedValue, dealMetrics, marketInsights } = data
 
-		const mileagePenalty = marketInsights?.mileageImpact || "calculating..."
+        const mileagePenalty = marketInsights?.mileageImpact || "Factored into ML weights"
 
-		result.innerHTML = `
-            <p> The average marketplace value for a ${year} ${serverBrand} is <strong> ${marketInsights.averagePriceForYear}</strong>, 
-            but your specific unit is valued at <strong> ${estimatedValue} </strong> 
-            due to an accumulated mileage penalty of ${marketInsights.mileageImpact}. And its depreciation rate is ${marketInsights.depreciationRate}.</p>
-            <h3> Overall: <span class='${dealMetrics.status}'>${dealMetrics.label}</span> </h3>
-		`
+        result.innerHTML = `
+            <p> The average marketplace value for a ${year} ${serverBrand} is <strong>${marketInsights.averagePriceForYear}</strong>, 
+            but your specific unit is valued at <strong>${estimatedValue}</strong> 
+            due to an accumulated mileage penalty: <em>${mileagePenalty}</em>. Its standard curve is: <em>${marketInsights.depreciationRate}</em>.</p>
+            <h3> Overall: <span class="${dealMetrics.status}">${dealMetrics.label}</span> </h3>
+        `
+
 		loadMarketChart(brand, year, mileage, transmission, condition)
     } catch (error) {
         console.error('Fetch operation error:', error)
@@ -138,7 +158,20 @@ async function loadMarketChart(brand, year, mileage, transmission, condition) {
         const response = await fetch(`${BACKEND_URL}/market-trends`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ brand, year, mileage, transmission, condition })
+            body: JSON.stringify({ 
+                manufacturer: brand,
+                year: year,
+                odometer: mileage,
+                transmission: transmission,
+                condition: condition,
+                model: "unknown",
+                cylinders: "6 cylinders",
+                drive: "fwd",
+                size: "mid-size",
+                type: "sedan",
+                fuel: "gas",
+                title_status: "clean"
+            })
         })
         
         const data = await response.json()

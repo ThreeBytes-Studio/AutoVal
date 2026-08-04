@@ -3,3 +3,8 @@ uvicorn
 pydantic
 joblib
 numpy
+pandas
+scikit-learn
+xgboost
+# scikit-learn==1.9.0
+# xgboost==1.7.6

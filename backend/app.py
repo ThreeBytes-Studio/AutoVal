@@ -16,22 +16,51 @@ app.add_middleware(
 )
 
 class CarInput(BaseModel):
-    brand: str
-    year: str or int or None = None
-    mileage: str or int or None = None
-    transmission: str or None = None
-    condition: str or None = None
+    manufacturer: str
+    model: str
+    year: int
+    odometer: int
+    condition: str | None = None
+    cylinders: str | None = None
+    fuel: str | None = None
+    title_status: str | None = None
+    transmission: str | None = None
+    drive: str | None = None
+    size: str | None = None
+    type: str | None = None
 
-# Uncomment when model file is ready
 # try:
-#     model = joblib.load("car_model.joblib")
+#     model = joblib.load("model/car_price_pipeline.joblib")
+
+#     # For some reason nalload lang yung model sakin pag naka python 3.12 with dis block.
+#     # pag 3.14 python, di na ulit maload even with this.
+#     # ah shit actually no. kahit bumalik ng 3.12 at sinubukan specific versions 
+#     # ng joblib at xgboost this still didnt work. faa
+#     if hasattr(model, 'steps'):
+#         xgb_model = model.steps[-1][1]
+#         legacy_attrs = {
+#             "gpu_id": None,
+#             "importance_type": None,
+#             "predictor": None,
+#             "monotone_constraints": None,
+#             "interaction_constraints": None,
+#             "tree_method": None,
+#             "validate_parameters": None
+#         }
+#         for attr, default_val in legacy_attrs.items():
+#             if not hasattr(xgb_model, attr):
+#                 setattr(xgb_model, attr, default_val)
+#     print("ML Engine successfully initialized and online.")
 # except Exception as e:
 #     print(f"ML Engine offline: {e}")
 #     model = None
 
 @app.get("/")
 def check_status():
-    return {"status": "success", "message": "FastAPI engine matches server routing configuration."}
+    return {
+        "status": "success", 
+        "message": "FastAPI engine matches server routing configuration."
+    }
 
 @app.post("/predict")
 def predict_car_value(car: CarInput):
@@ -44,7 +73,7 @@ def predict_car_value(car: CarInput):
     # if model is not None:
     #     features = np.array([[car.brand, car_year, car_mileage, car.transmission, car.condition]])
     #     final_estimate = round(float(model.predict(features)[0]))
-    #     
+        
     #     return {
     #         "success": True,
     #         "brand": f"{car.brand.capitalize()} Vehicle",
