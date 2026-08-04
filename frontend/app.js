@@ -1,30 +1,44 @@
-// Auto select backend url whether running locally or live.
+// 1. ENVIRONMENT & BACKEND ROUTING SETUP ===============================================================================================
+
+// Automatically selects the backend URL depending on whether the frontend is running locally or live in production
 const BACKEND_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://127.0.0.1:8000'
     : 'https://autoval-8cs7.onrender.com'
 
-// Color toggling
+
+// 2. THEME / COLOR TOGGLING LOGIC ======================================================================================================
+
+// Define available visual themes for the application interface
 const themes = ['dark', 'dark-soft', 'light', 'midnight']
+
+// Retrieve saved theme preference from local storage if previously selected
 const savedTheme = localStorage.getItem('user-theme')
+
+// Determine initial theme index based on local storage or default dataset attribute
 let currentThemeIndex = themes.includes(savedTheme) 
     ? themes.indexOf(savedTheme) 
     : (themes.indexOf(document.body.dataset.theme) === -1 ? 0 : themes.indexOf(document.body.dataset.theme))
 
+// Apply initial active theme attribute to HTML <body> tag
 document.body.dataset.theme = themes[currentThemeIndex]
 
+// Handle user clicking the theme toggle button to switch modes
 const colorToggle = document.getElementById('color-toggle')
 colorToggle.addEventListener('click', () => {
+    // Cycle sequentially through theme array
     currentThemeIndex = (currentThemeIndex + 1) % themes.length
     const nextTheme = themes[currentThemeIndex]
     
+    // Apply selected theme to body attribute and persist to local storage
     document.body.dataset.theme = nextTheme
-
     localStorage.setItem('user-theme', nextTheme)
     
+    // Read dynamic CSS CSS custom variables for updating chart styling on theme change
     const freshFgMuted = getComputedStyle(document.body).getPropertyValue('--fg-muted').trim()
     const freshBorder = getComputedStyle(document.body).getPropertyValue('--border').trim()
     const freshAccent = getComputedStyle(document.body).getPropertyValue('--chart-1').trim()
 
+    // Dynamically re-render depreciation chart palette if instance exists
     if (myChart) {
         myChart.options.plugins.legend.labels.color = freshFgMuted
         
@@ -41,10 +55,14 @@ colorToggle.addEventListener('click', () => {
     }
 })
 
-// Initialize blank chart/s
+
+// 3. CHART INITIALIZATION & MANAGEMENT =================================================================================================
+
+// Global variables to store Chart.js instances for dynamic updates
 let myChart = null
 let neonChart = null
 
+// Helper function to extract current CSS variable theme colors for charts
 function getThemeColors() {
     const style = getComputedStyle(document.body)
     return {
@@ -55,10 +73,11 @@ function getThemeColors() {
     }
 }
 
+// Function to instantiate canvas charts with default structures
 function initCharts() {
     const colors = getThemeColors()
 
-    // 1. Existing Depreciation Chart
+    // 1. Depreciation Line Chart Initialization
     const lineCtx = document.getElementById('depreciationChart')?.getContext('2d')
     if (lineCtx) {
         myChart = new Chart(lineCtx, {
@@ -84,8 +103,11 @@ function initCharts() {
                 scales: {
                     y: { 
                         beginAtZero: false, 
-                        title: { display: true, text: 'Estimated Value ($)', color: colors.fgMuted },
-                        ticks: { color: colors.fgMuted },
+                        title: { display: true, text: 'Estimated Value (PHP)', color: colors.fgMuted },
+                        ticks: { 
+                            color: colors.fgMuted,
+                            callback: value => '₱' + value.toLocaleString()
+                        },
                         grid: { color: colors.border }
                     },
                     x: { 
@@ -98,7 +120,7 @@ function initCharts() {
         })
     }
 
-    // 2. Neon DB Chart
+    // 2. Neon DB Historical Bar Chart Initialization
     const neonCtx = document.getElementById('neonChart')?.getContext('2d')
     if (neonCtx) {
         neonChart = new Chart(neonCtx, {
@@ -140,7 +162,7 @@ function initCharts() {
     }
 }
 
-// Dynamically refresh chart colors on theme switch
+// Helper function to dynamically synchronize all existing chart colors with active CSS variables
 function updateChartColors() {
     const colors = getThemeColors()
 
@@ -182,9 +204,13 @@ const themeObserver = new MutationObserver(mutations => {
 })
 themeObserver.observe(document.body, { attributes: true })
 
+// Call chart instantiation when script loads
 initCharts()
 
-// For models dropdown
+
+// 4. DYNAMIC CAR MODEL SELECTION MAPPING ===============================================================================================
+
+// Mapping object linking manufacturers to supported car model options
 const carModelsByBrand = {
     toyota: ["camry", "corolla", "rav4", "tacoma", "highlander", "prius", "yaris", "4runner", "tundra", "sienna"],
     honda: ["civic", "accord", "cr-v", "pilot", "fit", "odyssey", "hr-v", "ridgeline", "passport"],
@@ -213,16 +239,20 @@ const carModelsByBrand = {
 const brandSelect = document.getElementById("brand")
 const modelSelect = document.getElementById("model")
 
+// Event listener to automatically populate model dropdown options whenever manufacturer is changed
 brandSelect.addEventListener("change", (e) => {
     const selectedBrand = e.target.value.toLowerCase()
     const models = carModelsByBrand[selectedBrand] || ["other"]
     
+    // Clear existing option elements
     modelSelect.innerHTML = '<option value="" disabled selected>Select a model</option>'
     
+    // Append newly populated model options
     models.forEach(model => {
         const option = document.createElement("option")
         option.value = model
         
+        // Format model strings with capitalized first letter
         const formattedName = model.charAt(0).toUpperCase() + model.slice(1)
         
         option.textContent = formattedName
@@ -230,12 +260,20 @@ brandSelect.addEventListener("change", (e) => {
     })
 })
 
-// On submit button click
+
+// 5. VALUATION FORM SUBMISSION & API HANDLER ===========================================================================================
+
 const carForm = document.getElementById('carForm')
 const result = document.getElementById('result')
+
+// Utility helper to create a artificial delay for UX feel during async operations
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
+// Main form submission listener for predicting vehicle prices
 carForm.addEventListener('submit', async (e) => {
     e.preventDefault()
+    
+    // Collect values from HTML form inputs
     const brand = document.getElementById('brand').value
     const model = document.getElementById('model').value
     const year = parseInt(document.getElementById('year').value)
@@ -243,6 +281,7 @@ carForm.addEventListener('submit', async (e) => {
     const transmission = document.getElementById('transmission').value
     const condition = document.getElementById('condition').value
 
+    // Frontend validation logic for year and odometer input sanity checks
     const currentYear = new Date().getFullYear()
     if (year > currentYear) {
         result.innerHTML = `<em style='color: red;'>Year cannot exceed current year..</em>`
@@ -251,7 +290,12 @@ carForm.addEventListener('submit', async (e) => {
         result.innerHTML = `<em style='color: red;'>Year cannot be before 1886..</em>`
         return
     }
+    if (isNaN(mileage) || mileage < 0) {
+        result.innerHTML = `<em style='color: red;'>Please enter a valid mileage.</em>`
+        return
+    }
 
+    // Construct data payload to match FastAPI backend expected schema
     const payload = {
         manufacturer: brand,
         model: model,
@@ -260,7 +304,7 @@ carForm.addEventListener('submit', async (e) => {
         transmission: transmission,
         condition: condition,
         
-        // Fake fallback values for the ML model
+        // Baseline fallback parameters required by the ML model pipeline
         cylinders: "4 cylinders",
         drive: "fwd",
         size: "mid-size",
@@ -274,6 +318,7 @@ carForm.addEventListener('submit', async (e) => {
     await delay(450)
 
     try {
+        // Send POST request to FastAPI backend predict route
         const response = await fetch(`${BACKEND_URL}/predict`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -287,30 +332,36 @@ carForm.addEventListener('submit', async (e) => {
             result.innerHTML = `<span style="color: orange"><strong>Engine Warning:</strong> ${data.message}</span>`
             return
         }
-        const { brand: serverBrand, estimatedValue, dealMetrics, marketInsights } = data
-        
-        const mileagePenalty = marketInsights?.mileageImpact || "Factored into ML weights"
-        
-        // result.innerHTML = `
-        //     <p> The average marketplace value for a ${year} ${serverBrand} is <strong>${marketInsights.averagePriceForYear}</strong>, 
-        //     but your specific unit is valued at <strong>${estimatedValue}</strong> 
-        //     due to an accumulated mileage penalty: <em>${mileagePenalty}</em>. Its standard curve is: <em>${marketInsights.depreciationRate}</em>.</p>
-        //     <h3> Overall: <span class="${dealMetrics.status}">${dealMetrics.label}</span> </h3>
-        // `
 
+        // Extract prediction parameters returned by ML model
+        const { brand: serverBrand, year: serverYear, estimatedValue, range, dealMetrics } = data
+
+        // Render valuation results onto the page
         result.innerHTML = `
-            <h3> The average marketplace value for a ${year} ${serverBrand} is <strong>${estimatedValue}</strong>.</h3>
-            <h4> Overall: <span class="${dealMetrics.status}">${dealMetrics.label}</span> </h4>
+            <div class="result-header" style="margin-bottom: 12px;">
+                <h2 style="font-size: 1.25rem; font-weight: 600; margin: 0; color: var(--fg-default);">
+                    Valuation for ${serverYear} ${serverBrand}
+                </h2>
+            </div>
+            <h3>Estimated Market Value: <strong>${estimatedValue}</strong></h3>
+            <p style="margin-top: 4px; color: var(--fg-muted);">
+                Typical Range: <strong>${range.min}</strong> – <strong>${range.max}</strong>
+            </p>
+            <h4>Overall: <span class="${dealMetrics.status}">${dealMetrics.label}</span></h4>
         `
 
-		loadMarketChart(brand, year, mileage, transmission, condition)
+        // Trigger loading and rendering of line chart depreciation trends
+        loadMarketChart(brand, year, mileage, transmission, condition)
     } catch (error) {
         console.error('Fetch operation error:', error)
         result.innerHTML = `<span style="color: red"><strong>Error:</strong> Could not reach backend server. Did you start app.py in your terminal?</span>`
     }
 })
 
-// Helper function on submit button click to load chart/s data.
+
+// 6. CHART DATA API FETCHING LOGIC =====================================================================================================
+
+// Helper function called after prediction to fetch and plot market trend depreciation data
 async function loadMarketChart(brand, year, mileage, transmission, condition) {
     try {
         const response = await fetch(`${BACKEND_URL}/market-trends`, {
@@ -335,6 +386,7 @@ async function loadMarketChart(brand, year, mileage, transmission, condition) {
         
         const data = await response.json()
         
+        // Update line chart datasets with returned array trends
         if (myChart) {
             myChart.data.labels = data.mileageLabels
             myChart.data.datasets[0].data = data.depreciationPrices
@@ -346,6 +398,7 @@ async function loadMarketChart(brand, year, mileage, transmission, condition) {
     }
 }
 
+// Function to fetch historical database record summary for the Neon DB bar chart
 async function loadNeonDatabaseChart() {
     try {
         const response = await fetch(`${BACKEND_URL}/chart-data`)
@@ -358,7 +411,7 @@ async function loadNeonDatabaseChart() {
 
         const rawData = result.data
 
-        // Process Neon data: calculate average price per brand
+        // Process Neon data: aggregate and calculate average price grouped by brand
         const brandPrices = {}
         const brandCounts = {}
 
@@ -377,6 +430,7 @@ async function loadNeonDatabaseChart() {
         const labels = Object.keys(brandPrices)
         const avgPrices = labels.map(b => Math.round(brandPrices[b] / brandCounts[b]))
 
+        // Inject computed averages into the neon bar chart
         if (neonChart) {
             neonChart.data.labels = labels
             neonChart.data.datasets[0].data = avgPrices
@@ -388,7 +442,7 @@ async function loadNeonDatabaseChart() {
     }
 }
 
-// Automatically load Neon DB data when page mounts
+// Automatically load Neon DB data once DOM components complete initial rendering
 document.addEventListener('DOMContentLoaded', () => {
     loadNeonDatabaseChart()
 })

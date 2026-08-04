@@ -1,86 +1,95 @@
-import sys
 import os
-import math
+import sys
 from pathlib import Path
+
+import joblib
+import pandas as pd
 from dotenv import load_dotenv
-
-# Load .env variables (DATABASE_URL)
-env_path = Path(__file__).parent / ".env"
-load_dotenv(env_path)
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import pandas as pd
-import joblib         # Uncomment when model file is ready
-import numpy as np    # Uncomment when model file is ready
 
-import sys
-from pathlib import Path
-model_dir = Path(__file__).parent / "model"
-if str(model_dir) not in sys.path:
-    sys.path.append(str(model_dir))
-import custom_transformers
+# 1. System Paths & Environment Setup ===================================================================================================
+BASE_DIR = Path(__file__).parent
+load_dotenv(BASE_DIR / ".env")
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "database"))
+# Ensure local modules (model transformers and database adapters) are on sys.path
+for path in [BASE_DIR / "model", BASE_DIR / "database"]:
+    if str(path) not in sys.path:
+        sys.path.append(str(path))
+
 import chart_mapper
+import custom_transformers  # Required for joblib model unpickling
 
-app = FastAPI()
+# 2. FastAPI Setup ======================================================================================================================
+app = FastAPI(title="AutoVal ML API")
 
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
-
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request, exc):
-    print("Validation Error Details:", exc.errors())
-    return JSONResponse(status_code=422, content={"detail": exc.errors()})
-
-origins = [
-    "http://localhost:5500",                  # VS Code Live Server (Frontend)
-    "http://127.0.0.1:5500",                  # VS Code Five Server
-    "http://localhost:5173",                  # Vite / React default (if you use it)
-    "https://autoval-threebytes.vercel.app",  # Exact Vercel deployment URL
+ALLOWED_ORIGINS = [
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "http://localhost:5173",
+    "https://autoval-threebytes.vercel.app",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_origins=origins,
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
+USD_TO_PHP = 58.5
+
+# 3. Schemas & ML Model Loading =========================================================================================================
 class CarInput(BaseModel):
     manufacturer: str
     model: str
     year: int
     odometer: int
-    condition: str | None = None
-    cylinders: str | None = None
-    fuel: str | None = None
-    title_status: str | None = None
-    transmission: str | None = None
-    drive: str | None = None
-    size: str | None = None
-    type: str | None = None
+    condition: str | None = "good"
+    cylinders: str | None = "4 cylinders"
+    fuel: str | None = "gas"
+    title_status: str | None = "clean"
+    transmission: str | None = "automatic"
+    drive: str | None = "fwd"
+    size: str | None = "mid-size"
+    type: str | None = "sedan"
+
 
 try:
-    model = joblib.load("model/car_price_pipeline.joblib")
+    model = joblib.load(BASE_DIR / "model" / "car_price_pipeline.joblib")
     print("ML Engine successfully initialized and online.")
 except Exception as e:
     print(f"ML Engine offline: {e}")
     model = None
 
-@app.get("/")
-def check_status():
+
+# 4. Helper Functions ===================================================================================================================
+def build_feature_dict(car: CarInput, odometer_override: int | None = None) -> dict:
+    """Helper to standardize Pandas DataFrame input format across endpoints."""
     return {
-        "status": "success",
-        "message": "FastAPI engine matches server routing configuration."
+        "manufacturer": car.manufacturer,
+        "model": car.model,
+        "year": int(car.year),
+        "odometer": odometer_override if odometer_override is not None else int(car.odometer),
+        "condition": car.condition or "good",
+        "cylinders": car.cylinders or "4 cylinders",
+        "fuel": car.fuel or "gas",
+        "title_status": car.title_status or "clean",
+        "transmission": car.transmission or "automatic",
+        "drive": car.drive or "fwd",
+        "size": car.size or "mid-size",
+        "type": car.type or "sedan",
     }
 
-# Endpoint for Neon data
+
+# 5. Routes =============================================================================================================================
+@app.get("/")
+def check_status():
+    return {"status": "success", "message": "FastAPI engine online."}
+
+
 @app.get("/chart-data")
 def fetch_chart_data():
     try:
@@ -89,76 +98,75 @@ def fetch_chart_data():
     except Exception as e:
         print(f"Neon DB Error: {e}")
         return {"success": False, "error": str(e), "data": []}
-    
+
+
 @app.post("/predict")
 def predict_car_value(car: CarInput):
-    current_year = 2026
-    car_year = int(car.year)
-    car_mileage = int(car.odometer)
-    car_brand = car.manufacturer
-    age = max(0, current_year - car_year)
+    if model is None:
+        return {"success": False, "message": "ML Model unavailable"}
 
-    # Uncomment when model file is ready
-    if model is not None:
-        input_data = pd.DataFrame([{
-            "manufacturer": car.manufacturer,
-            "model": car.model,
-            "year": car_year,
-            "odometer": car_mileage,
-            "condition": car.condition,
-            "cylinders": car.cylinders,
-            "fuel": car.fuel,
-            "title_status": car.title_status,
-            "transmission": car.transmission,
-            "drive": car.drive,
-            "size": car.size,
-            "type": car.type
-        }])
-        final_estimate = round(float(model.predict(input_data)[0]))
+    input_df = pd.DataFrame([build_feature_dict(car)])
+    
+    # Run single prediction inference
+    raw_usd_prediction = float(model.predict(input_df)[0])
+    php_estimate = round(raw_usd_prediction * USD_TO_PHP)
 
-        return {
-            "success": True,
-            "brand": f"{car.manufacturer.capitalize()} {car.model.capitalize()}",
-            "year": car_year,
-            "estimatedValue": f"${final_estimate:,}",
-            # Temporary/fake values
-            "dealMetrics": {"status": "fair_price", "label": "ML Predicted Market Price"},
-            "marketInsights": {
-                "averagePriceForYear": "Calculated by ML",
-                "depreciationRate": "Determined by ML data drift",
-                "mileageImpact": " factored into ML weights"
-            }
-        }
-
-@app.post("/market-trends")
-def calculate_trends(car: CarInput):
-    # Temporary formulas start (Delete when model file is ready) ===================================================================
-    # current_year = 2026
-    # car_year = int(car.year) if car.year else 2026
-    # age = max(0, current_year - car_year)
-    
-    car_brand = car.manufacturer
-    
-    starting_price = 65000 if car_brand == 'luxury' else 26000
-    if car.condition == 'excellent': starting_price *= 1.12
-    elif car.condition == 'poor': starting_price *= 0.65
-    
-    if car.transmission == 'manual':
-        starting_price = starting_price * 1.05 if car_brand == 'luxury' else starting_price * 0.93
-
-    decay_factor = 0.82 if car_brand == 'luxury' else 0.90 
-    mileage_labels = ["10k mi", "30k mi", "50k mi", "70k mi", "90k mi", "110k mi+"]
-    
-    depreciation_prices = []
-    for index, _ in enumerate(mileage_labels):
-        step_penalty = math.pow(decay_factor, index)
-        baseline_floor = 4000 if car_brand == 'luxury' else 2000
-        calculated_step = round(max(baseline_floor, starting_price * step_penalty))
-        depreciation_prices.append(calculated_step)
-    # Temporary formulas end (Delete when model file is ready) ===================================================================
+    # 10% tolerance boundary calculation
+    min_value = round(php_estimate * 0.90)
+    max_value = round(php_estimate * 1.10)
 
     return {
         "success": True,
-        "mileageLabels": mileage_labels,
-        "depreciationPrices": depreciation_prices
+        "brand": f"{car.manufacturer.title()} {car.model.title()}",
+        "year": int(car.year),
+        "estimatedValue": f"₱{php_estimate:,}",
+        "range": {
+            "min": f"₱{min_value:,}",
+            "max": f"₱{max_value:,}",
+        },
+        "rawEstimates": {
+            "min": min_value,
+            "target": php_estimate,
+            "max": max_value,
+        },
+        "dealMetrics": {"status": "fair_price", "label": "ML Predicted Market Price"},
     }
+
+
+@app.post("/market-trends")
+def calculate_trends(car: CarInput):
+    mileage_steps = [10000, 30000, 50000, 70000, 90000, 110000]
+    mileage_labels = ["10k mi", "30k mi", "50k mi", "70k mi", "90k mi", "110k mi+"]
+
+    if model is None:
+        return {
+            "success": False,
+            "message": "ML Model unavailable",
+            "mileageLabels": mileage_labels,
+            "depreciationPrices": [],
+        }
+
+    try:
+        # Build batch inference dataframe with varying odometer values
+        batch_rows = [build_feature_dict(car, odo) for odo in mileage_steps]
+        input_df = pd.DataFrame(batch_rows)
+
+        raw_predictions = model.predict(input_df)
+        depreciation_prices = [
+            max(0, round(float(price) * USD_TO_PHP)) for price in raw_predictions
+        ]
+
+        return {
+            "success": True,
+            "mileageLabels": mileage_labels,
+            "depreciationPrices": depreciation_prices,
+        }
+
+    except Exception as e:
+        print(f"ML Trend Calculation Error: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "mileageLabels": mileage_labels,
+            "depreciationPrices": [],
+        }
