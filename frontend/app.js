@@ -89,6 +89,52 @@ function initCharts() {
 }
 initCharts()
 
+// For models dropdown
+const carModelsByBrand = {
+    toyota: ["camry", "corolla", "rav4", "tacoma", "highlander", "prius", "yaris", "4runner", "tundra", "sienna"],
+    honda: ["civic", "accord", "cr-v", "pilot", "fit", "odyssey", "hr-v", "ridgeline", "passport"],
+    ford: ["f-150", "mustang", "explorer", "escape", "focus", "fusion", "ranger", "bronco", "edge", "expedition"],
+    chevrolet: ["silverado", "malibu", "equinox", "tahoe", "cruze", "camaro", "suburban", "colorado", "traverse", "corvette"],
+    bmw: ["3 series", "5 series", "7 series", "x1", "x3", "x5", "x7", "m3", "m5", "i4", "iX"],
+    nissan: ["altima", "sentra", "rogue", "murano", "pathfinder", "frontier", "maxima", "versa", "armada"],
+    hyundai: ["elantra", "sonata", "tucson", "santa fe", "palisade", "kona", "ionic 5", "accent", "venue"],
+    kia: ["forte", "optima", "k5", "sportage", "sorento", "telluride", "soul", "ev6", "seltos"],
+    volkswagen: ["jetta", "passat", "golf", "tiguan", "atlas", "taos", "id.4", "gti"],
+    mercedes: ["c-class", "e-class", "s-class", "glc", "gle", "gls", "a-class", "g-class", "eqs"],
+    audi: ["a4", "a6", "q3", "q5", "q7", "q8", "e-tron", "r8", "a3"],
+    subaru: ["outback", "forester", "impreza", "crosstrek", "legacy", "ascent", "wrx", "brz"],
+    mazda: ["mazda3", "mazda6", "cx-5", "cx-30", "cx-50", "cx-90", "mx-5 miata"],
+    lexus: ["rx", "es", "nx", "is", "gx", "lx", "ux", "tx"],
+    tesla: ["model 3", "model y", "model s", "model x", "cybertruck"],
+    jeep: ["wrangler", "grand cherokee", "cherokee", "compass", "gladiator", "renegade"],
+    dodge: ["charger", "challenger", "durango", "hornet"],
+    ram: ["1500", "2500", "3500", "promaster"],
+    gmc: ["sierra", "acadia", "yukon", "terrain", "canyon"],
+    volvo: ["xc60", "xc90", "xc40", "s60", "s90", "v60"],
+    porsche: ["911", "cayenne", "macan", "taycan", "panamera", "718 boxster"],
+    other: ["other"]
+}
+
+const brandSelect = document.getElementById("brand")
+const modelSelect = document.getElementById("model")
+
+brandSelect.addEventListener("change", (e) => {
+    const selectedBrand = e.target.value.toLowerCase()
+    const models = carModelsByBrand[selectedBrand] || ["other"]
+    
+    modelSelect.innerHTML = '<option value="" disabled selected>Select a model</option>'
+    
+    models.forEach(model => {
+        const option = document.createElement("option")
+        option.value = model
+        
+        const formattedName = model.charAt(0).toUpperCase() + model.slice(1)
+        
+        option.textContent = formattedName
+        modelSelect.appendChild(option)
+    })
+})
+
 // On submit button click
 const carForm = document.getElementById('carForm')
 const result = document.getElementById('result')
@@ -96,26 +142,38 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 carForm.addEventListener('submit', async (e) => {
     e.preventDefault()
     const brand = document.getElementById('brand').value
+    const model = document.getElementById('model').value
     const year = parseInt(document.getElementById('year').value)
     const mileage = parseInt(document.getElementById('mileage').value)
     const transmission = document.getElementById('transmission').value
     const condition = document.getElementById('condition').value
 
+    const currentYear = new Date().getFullYear()
+    if (year > currentYear) {
+        result.innerHTML = `<em style='color: red;'>Year cannot exceed current year..</em>`
+        return
+    } else if (year < 1886) {
+        result.innerHTML = `<em style='color: red;'>Year cannot be before 1886..</em>`
+        return
+    }
+
     const payload = {
         manufacturer: brand,
-        year: year,
-        odometer: mileage,
+        model: model,
+        year: parseInt(year),
+        odometer: parseInt(mileage),
         transmission: transmission,
         condition: condition,
-        model: "unknown",
         
-        cylinders: "6 cylinders",
+        // Fake fallback values for the ML model
+        cylinders: "4 cylinders",
         drive: "fwd",
         size: "mid-size",
         type: "sedan",
         fuel: "gas",
         title_status: "clean"
     }
+    
     result.innerHTML = '<em>Connecting to server..</em>'
 
     await delay(450)
@@ -135,14 +193,18 @@ carForm.addEventListener('submit', async (e) => {
             return
         }
         const { brand: serverBrand, estimatedValue, dealMetrics, marketInsights } = data
-
-        const mileagePenalty = marketInsights?.mileageImpact || "Factored into ML weights"
+        
+        // const mileagePenalty = marketInsights?.mileageImpact || "Factored into ML weights"
+        // result.innerHTML = `
+        //     <p> The average marketplace value for a ${year} ${serverBrand} is <strong>${marketInsights.averagePriceForYear}</strong>, 
+        //     but your specific unit is valued at <strong>${estimatedValue}</strong> 
+        //     due to an accumulated mileage penalty: <em>${mileagePenalty}</em>. Its standard curve is: <em>${marketInsights.depreciationRate}</em>.</p>
+        //     <h3> Overall: <span class="${dealMetrics.status}">${dealMetrics.label}</span> </h3>
+        // `
 
         result.innerHTML = `
-            <p> The average marketplace value for a ${year} ${serverBrand} is <strong>${marketInsights.averagePriceForYear}</strong>, 
-            but your specific unit is valued at <strong>${estimatedValue}</strong> 
-            due to an accumulated mileage penalty: <em>${mileagePenalty}</em>. Its standard curve is: <em>${marketInsights.depreciationRate}</em>.</p>
-            <h3> Overall: <span class="${dealMetrics.status}">${dealMetrics.label}</span> </h3>
+            <h3> The average marketplace value for a ${year} ${serverBrand} is <strong>${estimatedValue}</strong>.</h3>
+            <h4> Overall: <span class="${dealMetrics.status}">${dealMetrics.label}</span> </h4>
         `
 
 		loadMarketChart(brand, year, mileage, transmission, condition)
@@ -165,6 +227,7 @@ async function loadMarketChart(brand, year, mileage, transmission, condition) {
                 transmission: transmission,
                 condition: condition,
                 model: "unknown",
+
                 cylinders: "6 cylinders",
                 drive: "fwd",
                 size: "mid-size",

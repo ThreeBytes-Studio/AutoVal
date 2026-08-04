@@ -1,4 +1,12 @@
+# Python files
 __pycache__/
-*.pyc.venv/
-venv/
+*.pyc
 .venv/
+
+# Spreadsheet files
+*.csv
+
+# Environment
+.env
+*.env
+**/.env

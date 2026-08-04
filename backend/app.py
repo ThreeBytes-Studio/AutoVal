@@ -2,10 +2,26 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import math
-# import joblib         # Uncomment when model file is ready
-# import numpy as np    # Uncomment when model file is ready
+import pandas as pd
+import joblib         # Uncomment when model file is ready
+import numpy as np    # Uncomment when model file is ready
+
+import sys
+from pathlib import Path
+model_dir = Path(__file__).parent / "model"
+if str(model_dir) not in sys.path:
+    sys.path.append(str(model_dir))
+import custom_transformers
 
 app = FastAPI()
+
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    print("Validation Error Details:", exc.errors())
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
 
 origins = [
     "http://localhost:5500",                  # VS Code Live Server (Frontend)
@@ -36,31 +52,12 @@ class CarInput(BaseModel):
     size: str | None = None
     type: str | None = None
 
-# try:
-#     model = joblib.load("model/car_price_pipeline.joblib")
-
-#     # For some reason nalload lang yung model sakin pag naka python 3.12 with dis block.
-#     # pag 3.14 python, di na ulit maload even with this.
-#     # ah shit actually no. kahit bumalik ng 3.12 at sinubukan specific versions 
-#     # ng joblib at xgboost this still didnt work. faa
-#     if hasattr(model, 'steps'):
-#         xgb_model = model.steps[-1][1]
-#         legacy_attrs = {
-#             "gpu_id": None,
-#             "importance_type": None,
-#             "predictor": None,
-#             "monotone_constraints": None,
-#             "interaction_constraints": None,
-#             "tree_method": None,
-#             "validate_parameters": None
-#         }
-#         for attr, default_val in legacy_attrs.items():
-#             if not hasattr(xgb_model, attr):
-#                 setattr(xgb_model, attr, default_val)
-#     print("ML Engine successfully initialized and online.")
-# except Exception as e:
-#     print(f"ML Engine offline: {e}")
-#     model = None
+try:
+    model = joblib.load("model/car_price_pipeline.joblib")
+    print("ML Engine successfully initialized and online.")
+except Exception as e:
+    print(f"ML Engine offline: {e}")
+    model = None
 
 @app.get("/")
 def check_status():
@@ -78,86 +75,36 @@ def predict_car_value(car: CarInput):
     age = max(0, current_year - car_year)
 
     # Uncomment when model file is ready
-    # if model is not None:
-    #     features = np.array([[car.manufacturer, car_year, car_mileage, car.transmission, car.condition]])
-    #     final_estimate = round(float(model.predict(features)[0]))
-    #     
-    #     return {
-    #         "success": True,
-    #         "brand": f"{car.manufacturer.capitalize()} Vehicle",
-    #         "year": car_year,
-    #         "estimatedValue": f"${final_estimate:,}",
-    #         "dealMetrics": {"status": "fair_price", "label": "ML Predicted Market Price"},
-    #         "marketInsights": {
-    #             "averagePriceForYear": "Calculated by ML",
-    #             "depreciationRate": "Determined by ML data drift",
-    #             "mileageImpact": " factored into ML weights"
-    #         }
-    #     }
+    if model is not None:
+        input_data = pd.DataFrame([{
+            "manufacturer": car.manufacturer,
+            "model": car.model,
+            "year": car_year,
+            "odometer": car_mileage,
+            "condition": car.condition,
+            "cylinders": car.cylinders,
+            "fuel": car.fuel,
+            "title_status": car.title_status,
+            "transmission": car.transmission,
+            "drive": car.drive,
+            "size": car.size,
+            "type": car.type
+        }])
+        final_estimate = round(float(model.predict(input_data)[0]))
 
-    # Temporary formulas start (Delete when model file is ready) ===================================================================
-    floor_price = 4000 if car_brand == 'luxury' else 2000
-
-    # Vintage tier bypass calculation
-    if age > 20:
         return {
             "success": True,
-            "brand": f"{car_brand.capitalize()} Classic",
+            "brand": f"{car.manufacturer.capitalize()} {car.model.capitalize()}",
             "year": car_year,
-            "estimatedValue": f"${floor_price:,}",
-            "dealMetrics": {
-                "status": "fair_price",
-                "label": "Vintage / Floor Value Status"
-            },
+            "estimatedValue": f"${final_estimate:,}",
+            # Temporary/fake values
+            "dealMetrics": {"status": "fair_price", "label": "ML Predicted Market Price"},
             "marketInsights": {
-                "averagePriceForYear": f"${floor_price:,}",
-                "depreciationRate": "0% (Fully Depreciated Value Tier)",
-                "mileageImpact": "Minimal (Value anchored to vehicle scrap/parts baseline)"
+                "averagePriceForYear": "Calculated by ML",
+                "depreciationRate": "Determined by ML data drift",
+                "mileageImpact": " factored into ML weights"
             }
         }
-
-    base_price = 30000
-    annual_depreciation_rate = 0.08
-    mileage_penalty_per_thousand = 50
-
-    if car_brand == 'luxury':
-        base_price = 65000
-        annual_depreciation_rate = 0.14
-        mileage_penalty_per_thousand = 90
-    elif car_brand == 'commuter':
-        base_price = 26000
-        annual_depreciation_rate = 0.07
-        mileage_penalty_per_thousand = 40
-
-    baseline_price_for_year = round(base_price * math.pow((1 - annual_depreciation_rate), age))
-
-    valued_price = baseline_price_for_year
-
-    if car.transmission == 'manual':
-        valued_price = valued_price * 1.05 if car_brand == 'luxury' else valued_price * 0.93
-
-    mileage_penalty = (car_mileage / 1000) * mileage_penalty_per_thousand
-    valued_price = valued_price - mileage_penalty
-
-    if car.condition == 'excellent': valued_price *= 1.12
-    elif car.condition == 'good': valued_price *= 1.00
-    elif car.condition == 'fair': valued_price *= 0.85
-    elif car.condition == 'poor': valued_price *= 0.65
-
-    final_estimate = round(max(floor_price, valued_price))
-
-    deal_rating = "fair_price"
-    deal_label = "Fair Market Price"
-    
-    variance_percent = (final_estimate - baseline_price_for_year) / baseline_price_for_year
-
-    if variance_percent > 0.08:
-        deal_rating = "great_deal"
-        deal_label = "High-Value Asset (Excellent Condition / Low Wear)"
-    elif variance_percent < -0.15:
-        deal_rating = "overpriced_risk"
-        deal_label = "Below Market Average (High Wear Risk)"
-    # Temporary formulas end (Delete when model file is ready) ===================================================================
 
     return {
         "success": True,
