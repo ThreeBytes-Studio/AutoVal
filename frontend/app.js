@@ -194,7 +194,8 @@ carForm.addEventListener('submit', async (e) => {
         }
         const { brand: serverBrand, estimatedValue, dealMetrics, marketInsights } = data
         
-        // const mileagePenalty = marketInsights?.mileageImpact || "Factored into ML weights"
+        const mileagePenalty = marketInsights?.mileageImpact || "Factored into ML weights"
+        
         // result.innerHTML = `
         //     <p> The average marketplace value for a ${year} ${serverBrand} is <strong>${marketInsights.averagePriceForYear}</strong>, 
         //     but your specific unit is valued at <strong>${estimatedValue}</strong> 
