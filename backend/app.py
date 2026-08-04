@@ -1,7 +1,16 @@
+import sys
+import os
+import math
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env variables (DATABASE_URL)
+env_path = Path(__file__).parent / ".env"
+load_dotenv(env_path)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import math
 import pandas as pd
 import joblib         # Uncomment when model file is ready
 import numpy as np    # Uncomment when model file is ready
@@ -12,6 +21,9 @@ model_dir = Path(__file__).parent / "model"
 if str(model_dir) not in sys.path:
     sys.path.append(str(model_dir))
 import custom_transformers
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "database"))
+import chart_mapper
 
 app = FastAPI()
 
@@ -33,7 +45,9 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origins=origins,
     allow_credentials=True,
+    allow_methods=["GET", "POST"],
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
@@ -62,10 +76,20 @@ except Exception as e:
 @app.get("/")
 def check_status():
     return {
-        "status": "success", 
+        "status": "success",
         "message": "FastAPI engine matches server routing configuration."
     }
 
+# Endpoint for Neon data
+@app.get("/chart-data")
+def fetch_chart_data():
+    try:
+        data = chart_mapper.fetch_all_data()
+        return {"success": True, "data": data}
+    except Exception as e:
+        print(f"Neon DB Error: {e}")
+        return {"success": False, "error": str(e), "data": []}
+    
 @app.post("/predict")
 def predict_car_value(car: CarInput):
     current_year = 2026
@@ -105,22 +129,6 @@ def predict_car_value(car: CarInput):
                 "mileageImpact": " factored into ML weights"
             }
         }
-
-    return {
-        "success": True,
-        "brand": f"{car_brand.capitalize()} Vehicle",
-        "year": car_year,
-        "estimatedValue": f"${final_estimate:,}",
-        "dealMetrics": {
-            "status": deal_rating,
-            "label": deal_label
-        },
-        "marketInsights": {
-            "averagePriceForYear": f"${baseline_price_for_year:,}",
-            "depreciationRate": f"{round(annual_depreciation_rate * 100)}% annually",
-            "mileageImpact": f"-${round(mileage_penalty):,}"
-        }
-    }
 
 @app.post("/market-trends")
 def calculate_trends(car: CarInput):
