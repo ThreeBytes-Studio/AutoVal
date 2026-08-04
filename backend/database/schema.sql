@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS historical_car_listing (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     brand VARCHAR(50) NOT NULL,
     model VARCHAR(50) NOT NULL,
-    year INTEGER NOT NULL
+    year INTEGER NOT NULL,
+    price INTEGER NOT NULL
 );
 
 -- Table for new input data

@@ -1,8 +1,14 @@
 import os
 import psycopg
+import json
+from psycopg.rows import dict_row
+from fastapi import FastAPI
 
-# Fetch data from database
-def fetch_data():
+# Initialize API
+app = FastAPI()
+
+@app.get("/chart-data")
+def fetch_all_data():
 
     # Get database url that vercel will bring to access database
     db_url = os.getenv("DATABASE_URL")
@@ -11,13 +17,9 @@ def fetch_data():
         raise KeyError("DATABASE_URL is not set in your environment variables!")
 
     # Connect to database
-    with psycopg.connect(db_url) as conn:
+    with psycopg.connect(db_url, row_factory=dict_row) as conn:
         with conn.cursor() as cursor:
             cursor.execute("SELECT * FROM historical_car_listing")
             rows = cursor.fetchall()
-            # TODO: Kay Chyrus to, [optional] add JSON friendly format
+            json.dumps(rows, indent=4) # Converts to JSON format
             return rows
-
-# TODO: Princess, ikaw sa implementation ng fastAPI, gamitin mo yung fetch_data function ko dahil eto yung kukuha ng mga datas from database, gagawin mo ay apply mo yung FastAPI dito na kung saan makukuha mo yung datas from fetch_data and mapaparse mo sa website. 
-
-# [Optional]: Di ko parin gaanong gets yung FastAPI so aaralin ko pa, pero feel free to send review request para double check ko
