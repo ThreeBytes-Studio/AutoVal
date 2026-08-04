@@ -3,3 +3,5 @@ uvicorn
 pydantic
 joblib
 numpy
+psycopg[binary]
+python-dotenv

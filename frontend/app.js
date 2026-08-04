@@ -43,50 +43,145 @@ colorToggle.addEventListener('click', () => {
 
 // Initialize blank chart/s
 let myChart = null
-function initCharts() {
-    const lineCtx = document.getElementById('depreciationChart').getContext('2d')
-    
-    const fgMuted = getComputedStyle(document.body).getPropertyValue('--fg-muted').trim()
-    const border = getComputedStyle(document.body).getPropertyValue('--border').trim()
-    const accent = getComputedStyle(document.body).getPropertyValue('--chart-1').trim()
+let neonChart = null
 
-    myChart = new Chart(lineCtx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'Market Price vs. Mileage Depreciation Curve',
-                data: [],
-                borderColor: accent,
-                backgroundColor: `${accent}1A`,
-                borderWidth: 3,
-                tension: 0.3,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    labels: { color: fgMuted }
-                }
+function getThemeColors() {
+    const style = getComputedStyle(document.body)
+    return {
+        fgMuted: style.getPropertyValue('--fg-muted').trim() || '#94a3b8',
+        border: style.getPropertyValue('--border').trim() || '#334155',
+        chart1: style.getPropertyValue('--chart-1').trim() || '#3b82f6',
+        chart2: style.getPropertyValue('--chart-2').trim() || '#10b981'
+    }
+}
+
+function initCharts() {
+    const colors = getThemeColors()
+
+    // 1. Existing Depreciation Chart
+    const lineCtx = document.getElementById('depreciationChart')?.getContext('2d')
+    if (lineCtx) {
+        myChart = new Chart(lineCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Market Price vs. Mileage Depreciation Curve',
+                    data: [],
+                    borderColor: colors.chart1,
+                    backgroundColor: `${colors.chart1}1A`,
+                    borderWidth: 3,
+                    tension: 0.3,
+                    fill: true
+                }]
             },
-            scales: {
-                y: { 
-                    beginAtZero: false, 
-                    title: { display: true, text: 'Estimated Value ($)', color: '#94a3b8' },
-                    ticks: { color: fgMuted },
-                    grid: { color: border }
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { labels: { color: colors.fgMuted } }
                 },
-                x: { 
-                    title: { display: true, text: 'Odometer Mileage Status', color: '#94a3b8' },
-                    ticks: { color: fgMuted },
-                    grid: { color: border }
+                scales: {
+                    y: { 
+                        beginAtZero: false, 
+                        title: { display: true, text: 'Estimated Value ($)', color: colors.fgMuted },
+                        ticks: { color: colors.fgMuted },
+                        grid: { color: colors.border }
+                    },
+                    x: { 
+                        title: { display: true, text: 'Odometer Mileage Status', color: colors.fgMuted },
+                        ticks: { color: colors.fgMuted },
+                        grid: { color: colors.border }
+                    }
                 }
             }
+        })
+    }
+
+    // 2. Neon DB Chart
+    const neonCtx = document.getElementById('neonChart')?.getContext('2d')
+    if (neonCtx) {
+        neonChart = new Chart(neonCtx, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Historical Listings Average Price (Neon DB)',
+                    data: [],
+                    backgroundColor: `${colors.chart2}33`,
+                    borderColor: colors.chart2,
+                    borderWidth: 2,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { labels: { color: colors.fgMuted } }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Price (PHP)', color: colors.fgMuted },
+                        ticks: {
+                            color: colors.fgMuted,
+                            callback: value => '₱' + value.toLocaleString()
+                        },
+                        grid: { color: colors.border }
+                    },
+                    x: {
+                        ticks: { color: colors.fgMuted },
+                        grid: { color: colors.border }
+                    }
+                }
+            }
+        })
+    }
+}
+
+// Dynamically refresh chart colors on theme switch
+function updateChartColors() {
+    const colors = getThemeColors()
+
+    const refreshChart = (chart, accentColor) => {
+        if (!chart) return
+        chart.options.plugins.legend.labels.color = colors.fgMuted
+        
+        if (chart.options.scales.y) {
+            chart.options.scales.y.ticks.color = colors.fgMuted
+            chart.options.scales.y.grid.color = colors.border
+            if (chart.options.scales.y.title) chart.options.scales.y.title.color = colors.fgMuted
+        }
+        if (chart.options.scales.x) {
+            chart.options.scales.x.ticks.color = colors.fgMuted
+            chart.options.scales.x.grid.color = colors.border
+            if (chart.options.scales.x.title) chart.options.scales.x.title.color = colors.fgMuted
+        }
+
+        if (chart.data.datasets[0]) {
+            chart.data.datasets[0].borderColor = accentColor
+            chart.data.datasets[0].backgroundColor = chart.config.type === 'line' 
+                ? `${accentColor}1A` 
+                : `${accentColor}33`
+        }
+        chart.update()
+    }
+
+    refreshChart(myChart, colors.chart1)
+    refreshChart(neonChart, colors.chart2)
+}
+
+// Observe attribute changes on <body> to re-render chart themes immediately when theme buttons are clicked
+const themeObserver = new MutationObserver(mutations => {
+    mutations.forEach(m => {
+        if (m.attributeName === 'data-theme') {
+            updateChartColors()
         }
     })
-}
+})
+themeObserver.observe(document.body, { attributes: true })
+
 initCharts()
 
 // On submit button click
@@ -153,3 +248,50 @@ async function loadMarketChart(brand, year, mileage, transmission, condition) {
         console.error('Failed to load chart metrics:', error)
     }
 }
+
+async function loadNeonDatabaseChart() {
+    try {
+        const response = await fetch(`${BACKEND_URL}/chart-data`)
+        const result = await response.json()
+
+        if (!result.success || !result.data || result.data.length === 0) {
+            console.warn('No Neon DB data available')
+            return
+        }
+
+        const rawData = result.data
+
+        // Process Neon data: calculate average price per brand
+        const brandPrices = {}
+        const brandCounts = {}
+
+        rawData.forEach(car => {
+            const brand = car.brand
+            const price = car.price
+
+            if (!brandPrices[brand]) {
+                brandPrices[brand] = 0
+                brandCounts[brand] = 0
+            }
+            brandPrices[brand] += price
+            brandCounts[brand] += 1
+        })
+
+        const labels = Object.keys(brandPrices)
+        const avgPrices = labels.map(b => Math.round(brandPrices[b] / brandCounts[b]))
+
+        if (neonChart) {
+            neonChart.data.labels = labels
+            neonChart.data.datasets[0].data = avgPrices
+            neonChart.update()
+        }
+
+    } catch (error) {
+        console.error('Failed to load Neon DB chart:', error)
+    }
+}
+
+// Automatically load Neon DB data when page mounts
+document.addEventListener('DOMContentLoaded', () => {
+    loadNeonDatabaseChart()
+})

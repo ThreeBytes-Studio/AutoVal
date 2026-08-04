@@ -1,17 +1,37 @@
+import sys
+import os
+import math
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env variables (DATABASE_URL)
+env_path = Path(__file__).parent / ".env"
+load_dotenv(env_path)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import math
 # import joblib         # Uncomment when model file is ready
 # import numpy as np    # Uncomment when model file is ready
 
+sys.path.append(os.path.join(os.path.dirname(__file__), "database"))
+import chart_mapper
+
 app = FastAPI()
+
+# CORS configuration for backend security
+origins = [
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "http://localhost:5173",
+    "https://autoval-threebytes.vercel.app",
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
@@ -31,8 +51,21 @@ class CarInput(BaseModel):
 
 @app.get("/")
 def check_status():
-    return {"status": "success", "message": "FastAPI engine matches server routing configuration."}
+    return {
+        "status": "success",
+        "message": "FastAPI engine matches server routing configuration."
+    }
 
+# Endpoint for Neon data
+@app.get("/chart-data")
+def fetch_chart_data():
+    try:
+        data = chart_mapper.fetch_all_data()
+        return {"success": True, "data": data}
+    except Exception as e:
+        print(f"Neon DB Error: {e}")
+        return {"success": False, "error": str(e), "data": []}
+    
 @app.post("/predict")
 def predict_car_value(car: CarInput):
     current_year = 2026
