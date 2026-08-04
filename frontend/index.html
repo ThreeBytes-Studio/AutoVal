@@ -24,8 +24,35 @@
                 <label for="brand">Brand</label>
                 <select id="brand" required>
                     <option value="" disabled selected>Select a brand</option>
-                    <option value="luxury">Luxury (e.g., BMW, Mercedes)</option>
-                    <option value="commuter">Commuter (e.g., Toyota, Honda)</option>
+                    <option value="audi">Audi</option>
+                    <option value="bmw">BMW</option>
+                    <option value="chevrolet">Chevrolet</option>
+                    <option value="dodge">Dodge</option>
+                    <option value="ford">Ford</option>
+                    <option value="gmc">GMC</option>
+                    <option value="honda">Honda</option>
+                    <option value="hyundai">Hyundai</option>
+                    <option value="jeep">Jeep</option>
+                    <option value="kia">Kia</option>
+                    <option value="lexus">Lexus</option>
+                    <option value="mazda">Mazda</option>
+                    <option value="mercedes">Mercedes-Benz</option>
+                    <option value="nissan">Nissan</option>
+                    <option value="porsche">Porsche</option>
+                    <option value="ram">RAM</option>
+                    <option value="subaru">Subaru</option>
+                    <option value="tesla">Tesla</option>
+                    <option value="toyota">Toyota</option>
+                    <option value="volkswagen">Volkswagen</option>
+                    <option value="volvo">Volvo</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="model">Model</label>
+                <select id="model" required>
+                    <option value="" disabled selected>Select a model</option>
                 </select>
             </div>
             
@@ -58,7 +85,6 @@
                     <option value="excellent">Excellent</option>
                     <option value="good">Good</option>
                     <option value="fair">Fair</option>
-                    <option value="poor">Poor</option>
                 </select>
             </div>
             
@@ -70,11 +96,13 @@
                 Results appear here.
             </div>
             <div class="chart-div">
+                <canvas id="neonChart"></canvas>
+            </div>
+            <div class="chart-div">
                 <canvas id="depreciationChart"></canvas>
             </div>
         </div>
     </main>
-
 
     <script src="app.js"></script>
 </body>
