@@ -7,11 +7,18 @@ import math
 
 app = FastAPI()
 
+origins = [
+    "http://localhost:5500",                  # VS Code Live Server (Frontend)
+    "http://127.0.0.1:5500",                  # VS Code Five Server
+    "http://localhost:5173",                  # Vite / React default (if you use it)
+    "https://autoval-threebytes.vercel.app",  # Exact Vercel deployment URL
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
@@ -66,17 +73,18 @@ def check_status():
 def predict_car_value(car: CarInput):
     current_year = 2026
     car_year = int(car.year)
-    car_mileage = int(car.mileage)
+    car_mileage = int(car.odometer)
+    car_brand = car.manufacturer
     age = max(0, current_year - car_year)
 
     # Uncomment when model file is ready
     # if model is not None:
-    #     features = np.array([[car.brand, car_year, car_mileage, car.transmission, car.condition]])
+    #     features = np.array([[car.manufacturer, car_year, car_mileage, car.transmission, car.condition]])
     #     final_estimate = round(float(model.predict(features)[0]))
-        
+    #     
     #     return {
     #         "success": True,
-    #         "brand": f"{car.brand.capitalize()} Vehicle",
+    #         "brand": f"{car.manufacturer.capitalize()} Vehicle",
     #         "year": car_year,
     #         "estimatedValue": f"${final_estimate:,}",
     #         "dealMetrics": {"status": "fair_price", "label": "ML Predicted Market Price"},
@@ -88,13 +96,13 @@ def predict_car_value(car: CarInput):
     #     }
 
     # Temporary formulas start (Delete when model file is ready) ===================================================================
-    floor_price = 4000 if car.brand == 'luxury' else 2000
+    floor_price = 4000 if car_brand == 'luxury' else 2000
 
     # Vintage tier bypass calculation
     if age > 20:
         return {
             "success": True,
-            "brand": f"{car.brand.capitalize()} Classic",
+            "brand": f"{car_brand.capitalize()} Classic",
             "year": car_year,
             "estimatedValue": f"${floor_price:,}",
             "dealMetrics": {
@@ -112,11 +120,11 @@ def predict_car_value(car: CarInput):
     annual_depreciation_rate = 0.08
     mileage_penalty_per_thousand = 50
 
-    if car.brand == 'luxury':
+    if car_brand == 'luxury':
         base_price = 65000
         annual_depreciation_rate = 0.14
         mileage_penalty_per_thousand = 90
-    elif car.brand == 'commuter':
+    elif car_brand == 'commuter':
         base_price = 26000
         annual_depreciation_rate = 0.07
         mileage_penalty_per_thousand = 40
@@ -126,7 +134,7 @@ def predict_car_value(car: CarInput):
     valued_price = baseline_price_for_year
 
     if car.transmission == 'manual':
-        valued_price = valued_price * 1.05 if car.brand == 'luxury' else valued_price * 0.93
+        valued_price = valued_price * 1.05 if car_brand == 'luxury' else valued_price * 0.93
 
     mileage_penalty = (car_mileage / 1000) * mileage_penalty_per_thousand
     valued_price = valued_price - mileage_penalty
@@ -153,7 +161,7 @@ def predict_car_value(car: CarInput):
 
     return {
         "success": True,
-        "brand": f"{car.brand.capitalize()} Vehicle",
+        "brand": f"{car_brand.capitalize()} Vehicle",
         "year": car_year,
         "estimatedValue": f"${final_estimate:,}",
         "dealMetrics": {
@@ -174,20 +182,22 @@ def calculate_trends(car: CarInput):
     # car_year = int(car.year) if car.year else 2026
     # age = max(0, current_year - car_year)
     
-    starting_price = 65000 if car.brand == 'luxury' else 26000
+    car_brand = car.manufacturer
+    
+    starting_price = 65000 if car_brand == 'luxury' else 26000
     if car.condition == 'excellent': starting_price *= 1.12
     elif car.condition == 'poor': starting_price *= 0.65
     
     if car.transmission == 'manual':
-        starting_price = starting_price * 1.05 if car.brand == 'luxury' else starting_price * 0.93
+        starting_price = starting_price * 1.05 if car_brand == 'luxury' else starting_price * 0.93
 
-    decay_factor = 0.82 if car.brand == 'luxury' else 0.90 
+    decay_factor = 0.82 if car_brand == 'luxury' else 0.90 
     mileage_labels = ["10k mi", "30k mi", "50k mi", "70k mi", "90k mi", "110k mi+"]
     
     depreciation_prices = []
     for index, _ in enumerate(mileage_labels):
         step_penalty = math.pow(decay_factor, index)
-        baseline_floor = 4000 if car.brand == 'luxury' else 2000
+        baseline_floor = 4000 if car_brand == 'luxury' else 2000
         calculated_step = round(max(baseline_floor, starting_price * step_penalty))
         depreciation_prices.append(calculated_step)
     # Temporary formulas end (Delete when model file is ready) ===================================================================
