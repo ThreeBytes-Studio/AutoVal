@@ -260,26 +260,33 @@ brandSelect.addEventListener("change", (e) => {
     })
 })
 
-
 // 5. VALUATION FORM SUBMISSION & API HANDLER ===========================================================================================
 
 const carForm = document.getElementById('carForm')
 const result = document.getElementById('result')
 
-// Utility helper to create a artificial delay for UX feel during async operations
+// Utility helper to create an artificial delay for UX feel during async operations
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 // Main form submission listener for predicting vehicle prices
 carForm.addEventListener('submit', async (e) => {
     e.preventDefault()
     
-    // Collect values from HTML form inputs
+    // Collect required values from HTML form inputs
     const brand = document.getElementById('brand').value
     const model = document.getElementById('model').value
     const year = parseInt(document.getElementById('year').value)
     const mileage = parseInt(document.getElementById('mileage').value)
     const transmission = document.getElementById('transmission').value
     const condition = document.getElementById('condition').value
+
+    // Collect optional advanced inputs (or fall back to 'Unknown')
+    const fuel = document.getElementById('fuel')?.value || "Unknown"
+    const title_status = document.getElementById('title_status')?.value || "Unknown"
+    const drive = document.getElementById('drive')?.value || "Unknown"
+    const type = document.getElementById('type')?.value || "Unknown"
+    const size = document.getElementById('size')?.value || "Unknown"
+    const cylinders = document.getElementById('cylinders')?.value || "Unknown"
 
     // Frontend validation logic for year and odometer input sanity checks
     const currentYear = new Date().getFullYear()
@@ -304,13 +311,13 @@ carForm.addEventListener('submit', async (e) => {
         transmission: transmission,
         condition: condition,
         
-        // Baseline fallback parameters required by the ML model pipeline
-        cylinders: "4 cylinders",
-        drive: "fwd",
-        size: "mid-size",
-        type: "sedan",
-        fuel: "gas",
-        title_status: "clean"
+        // Optional advanced specs (passes selected option or 'Unknown' default)
+        cylinders: cylinders,
+        drive: drive,
+        size: size,
+        type: type,
+        fuel: fuel,
+        title_status: title_status
     }
     
     result.innerHTML = '<em>Connecting to server..</em>'
@@ -351,37 +358,22 @@ carForm.addEventListener('submit', async (e) => {
         `
 
         // Trigger loading and rendering of line chart depreciation trends
-        loadMarketChart(brand, year, mileage, transmission, condition)
+        loadMarketChart(payload)
     } catch (error) {
         console.error('Fetch operation error:', error)
         result.innerHTML = `<span style="color: red"><strong>Error:</strong> Could not reach backend server. Did you start app.py in your terminal?</span>`
     }
 })
 
-
 // 6. CHART DATA API FETCHING LOGIC =====================================================================================================
 
 // Helper function called after prediction to fetch and plot market trend depreciation data
-async function loadMarketChart(brand, year, mileage, transmission, condition) {
+async function loadMarketChart(payload) {
     try {
         const response = await fetch(`${BACKEND_URL}/market-trends`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                manufacturer: brand,
-                year: year,
-                odometer: mileage,
-                transmission: transmission,
-                condition: condition,
-                model: "unknown",
-
-                cylinders: "6 cylinders",
-                drive: "fwd",
-                size: "mid-size",
-                type: "sedan",
-                fuel: "gas",
-                title_status: "clean"
-            })
+            body: JSON.stringify(payload)
         })
         
         const data = await response.json()

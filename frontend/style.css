@@ -8,7 +8,7 @@ body[data-theme="dark"] {
     --btn-bg: #238636;
     --btn-fg: #ffffff;
     --btn-bg-hover: #2ea043;
-    --chart-1: #3b82f6;
+    --chart-1: #38bdf8;
     --chart-2: #10b981;
 }
 body[data-theme="light"] {
@@ -21,7 +21,7 @@ body[data-theme="light"] {
     --btn-bg: #238636;
     --btn-fg: #ffffff;
     --btn-bg-hover: #2ea043;
-    --chart-1: #3b82f6;
+    --chart-1: #2563eb;
     --chart-2: #059669;
 }
 body[data-theme="dark-soft"] {
@@ -34,7 +34,7 @@ body[data-theme="dark-soft"] {
     --btn-bg: #347d39;      
     --btn-fg: #ffffff;      
     --btn-bg-hover: #46954a;
-    --chart-1: #3b82f6;
+    --chart-1: #fbbf24;
     --chart-2: #2dd4bf;
 }
 body[data-theme="midnight"] {
@@ -47,7 +47,7 @@ body[data-theme="midnight"] {
     --btn-bg: #8957e5;
     --btn-fg: #ffffff;
     --btn-bg-hover: #7a4ab3;
-    --chart-1: #3b82f6;
+    --chart-1: #6366f1;
     --chart-2: #f43f5e;
 }
 
@@ -69,7 +69,7 @@ body {
 }
 
 main {
-    margin-top: 1rem;
+    margin-top: 63px;
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -80,6 +80,11 @@ main {
 }
 
 header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: calc(100% - 20px);
+    margin: 10px;
     background-color: var(--card);
     padding: 8px 1.5rem;
     border: 1px solid var(--border);
@@ -116,6 +121,7 @@ form, .results {
 
 .form-group { 
     margin-bottom: 15px; 
+    width: 100%;
 }
 .dbl-form-group {
     display: flex;
@@ -168,6 +174,57 @@ button:hover {
     background-color: var(--btn-bg-hover);
 }
 
+.advanced-specs {
+    margin: 1.3rem 0;
+    margin-top: 9px;
+    border-radius: 6px;
+    background-color: var(--card-muted);
+    padding: 10px 14px;
+    transition: all 0.2s ease;
+}
+
+.advanced-specs summary {
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.85rem;
+    user-select: none;
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.advanced-specs summary::-webkit-details-marker {
+    display: none;
+}
+
+.advanced-specs summary::after {
+    content: "▼";
+    font-size: 0.75rem;
+    transition: transform 0.2s ease;
+    opacity: 0.8;
+}
+
+.advanced-specs[open] summary::after {
+    transform: rotate(180deg);
+}
+
+.advanced-specs summary:hover {
+    opacity: 0.85;
+}
+.advanced-specs select {
+    background-color: var(--card);
+}
+.advanced-specs label {
+    font-size: 0.85rem;
+}
+.advanced-note {
+    font-size: 0.8rem;
+    opacity: 0.75;
+    margin-top: 6px;
+    margin-bottom: 12px;
+    font-style: italic;
+}
 
 #result { 
     width: 100%;
@@ -205,6 +262,38 @@ button:hover {
     aspect-ratio: 16/9;
 }
 
+/* Global color transitions =========================================================================================================== */
+
+*, *::before, *::after {
+    transition: color 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
+}
+
+body, 
+header, 
+form, 
+.results, 
+#result, 
+.advanced-specs {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+input, 
+select, 
+button {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, outline-color 0.2s ease;
+}
+
+#color-toggle {
+    transition: background-color 0.3s ease, border-color 0.3s ease, fill 0.3s ease, transform 0.2s ease;
+}
+
+#color-toggle svg {
+    transition: fill 0.3s ease;
+}
+
+.advanced-specs select {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
 
 @media screen and (max-width: 800px){
     body {

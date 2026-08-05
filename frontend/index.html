@@ -68,25 +68,123 @@
                 </div>
             </div>
 
-            
-            <div class="form-group">
-                <label for="transmission">Transmission</label>
-                <select id="transmission" required>
-                    <option value="" disabled selected>Select transmission</option>
-                    <option value="auto">Automatic</option>
-                    <option value="manual">Manual</option>
-                </select>
+            <div class="dbl-form-group">
+                <div class="form-group">
+                    <label for="transmission">Transmission</label>
+                    <select id="transmission" required>
+                        <option value="" disabled selected>Select transmission</option>
+                        <option value="automatic">Automatic</option>
+                        <option value="manual">Manual</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="condition">Condition</label>
+                    <select id="condition" required>
+                        <option value="" disabled selected>Select condition</option>
+                        <option value="new">New</option>
+                        <option value="like new">Like New</option>
+                        <option value="excellent">Excellent</option>
+                        <option value="good">Good</option>
+                        <option value="fair">Fair</option>
+                        <option value="salvage">Salvage</option>
+                        <option value="Unknown">Unknown / Not sure</option>
+                    </select>
+                </div>
             </div>
-            
-            <div class="form-group">
-                <label for="condition">Condition</label>
-                <select id="condition" required>
-                    <option value="" disabled selected>Select condition</option>
-                    <option value="excellent">Excellent</option>
-                    <option value="good">Good</option>
-                    <option value="fair">Fair</option>
-                </select>
-            </div>
+
+            <details class="advanced-specs">
+                <summary>Advanced Specifications (Optional)</summary>
+                <p class="advanced-note">Unselected fields will automatically use default values.</p>
+                
+                <div class="dbl-form-group">
+                    <div class="form-group">
+                        <label for="fuel">Fuel Type</label>
+                        <select id="fuel">
+                            <option value="Unknown" selected>Default (Auto-fill)</option>
+                            <option value="gas">Gasoline</option>
+                            <option value="diesel">Diesel</option>
+                            <option value="hybrid">Hybrid</option>
+                            <option value="electric">Electric</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="title_status">Title Status</label>
+                        <select id="title_status">
+                            <option value="Unknown" selected>Default (Auto-fill)</option>
+                            <option value="clean">Clean</option>
+                            <option value="rebuilt">Rebuilt</option>
+                            <option value="salvage">Salvage</option>
+                            <option value="lien">Lien</option>
+                            <option value="missing">Missing</option>
+                            <option value="parts only">Parts Only</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="dbl-form-group">
+                    <div class="form-group">
+                        <label for="drive">Drivetrain (Drive)</label>
+                        <select id="drive">
+                            <option value="Unknown" selected>Unknown / Not sure</option>
+                            <option value="fwd">FWD (Front-Wheel Drive)</option>
+                            <option value="rwd">RWD (Rear-Wheel Drive)</option>
+                            <option value="4wd">4WD / AWD</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="type">Vehicle Type</label>
+                        <select id="type">
+                            <option value="Unknown" selected>Unknown / Not sure</option>
+                            <option value="sedan">Sedan</option>
+                            <option value="SUV">SUV</option>
+                            <option value="truck">Truck</option>
+                            <option value="coupe">Coupe</option>
+                            <option value="hatchback">Hatchback</option>
+                            <option value="convertible">Convertible</option>
+                            <option value="wagon">Wagon</option>
+                            <option value="van">Van</option>
+                            <option value="mini-van">Mini-van</option>
+                            <option value="pickup">Pickup</option>
+                            <option value="bus">Bus</option>
+                            <option value="offroad">Offroad</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="dbl-form-group">
+                    <div class="form-group">
+                        <label for="size">Vehicle Size</label>
+                        <select id="size">
+                            <option value="Unknown" selected>Unknown / Not sure</option>
+                            <option value="sub-compact">Sub-compact</option>
+                            <option value="compact">Compact</option>
+                            <option value="mid-size">Mid-size</option>
+                            <option value="full-size">Full-size</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cylinders">Cylinders</label>
+                        <select id="cylinders">
+                            <option value="Unknown" selected>Unknown / Not sure</option>
+                            <option value="3 cylinders">3 Cylinders</option>
+                            <option value="4 cylinders">4 Cylinders</option>
+                            <option value="5 cylinders">5 Cylinders</option>
+                            <option value="6 cylinders">6 Cylinders</option>
+                            <option value="8 cylinders">8 Cylinders</option>
+                            <option value="10 cylinders">10 Cylinders</option>
+                            <option value="12 cylinders">12 Cylinders</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+            </details>
             
             <button type="submit" id="predictBtn">Estimate Value</button>
         </form>
