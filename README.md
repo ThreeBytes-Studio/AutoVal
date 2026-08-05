@@ -15,7 +15,7 @@ Make sure you have **Python 3** installed on your computer. You can check by run
     ```   
 2. Install the required backend dependencies (only need to do this the first time):
     ```   
-   pip install -r requirements.txt
+   pip install -r ../requirements.txt
     ```   
 3. Boot up the local server by running:
     ```   
