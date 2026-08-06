@@ -8,6 +8,7 @@ const BACKEND_URL = (window.location.hostname === 'localhost' || window.location
 
 // 2. THEME / COLOR TOGGLING LOGIC ======================================================================================================
 
+// Define available visual themes for the application interface
 const themes = ['dark', 'dark-soft', 'light', 'midnight']
 
 let currentThemeIndex = themes.indexOf(document.documentElement.getAttribute('data-theme'))
