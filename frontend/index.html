@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AutoVal</title>
     <script>
-        function initTheme() {
+        function initTheme() { // fix for flasbang on page load.
             const savedTheme = localStorage.getItem('user-theme')
             const validThemes = ['dark', 'dark-soft', 'light', 'midnight']
             const themeToApply = validThemes.includes(savedTheme) ? savedTheme : 'dark'
