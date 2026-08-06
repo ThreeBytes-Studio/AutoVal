@@ -79,6 +79,16 @@ main {
     flex-wrap: wrap;
 }
 
+.cover {
+    position: fixed;
+    z-index: 98;
+    top: 0;
+    left: 0;
+    height: 60px;
+    width: 100%;
+    background-color: var(--bg);
+    pointer-events: none;
+}
 header {
     position: fixed;
     top: 0;
@@ -93,17 +103,20 @@ header {
     justify-content: space-between;
     align-items: center;
     gap: 10px;
-    box-shadow: 0 0 5px var(--bg);
-    z-index: 999;
+    z-index: 99;
 }
 header span {
     font-size: 1.4rem;
     font-weight: bold;
     margin-right: 10px;
 }
-header p {
+header p, header a {
     font-size: 1rem;
     color: var(--fg-muted);
+    text-decoration: none;
+}
+header a:hover {
+    color: var(--btn-bg);
 }
 #color-toggle {
     height: 35px;
@@ -270,8 +283,9 @@ button:hover {
     transition: color 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
 }
 
-body, 
-header, 
+body,
+.cover,
+header,
 form, 
 .results, 
 #result, 
@@ -297,12 +311,18 @@ button {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-@media screen and (max-width: 800px){
+@media screen and (max-width: 800px) {
     body {
         flex-direction: column;
         align-items: center;
     }
     form, .results {
         width: 100%;
+    }
+
+}
+@media screen and (max-width: 400px) {
+    header p, header a {
+        font-size: 0.8rem;
     }
 }
