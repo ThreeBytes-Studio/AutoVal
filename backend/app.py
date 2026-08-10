@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import psycopg
 
 # 1. System Paths & Environment Setup ===================================================================================================
 BASE_DIR = Path(__file__).parent
@@ -83,6 +84,40 @@ def build_feature_dict(car: CarInput, odometer_override: int | None = None) -> d
         "type": car.type or "Unknown",
     }
 
+def log_prediction_to_db(car: CarInput, php_price: float):
+    """Inserts user input specs and estimated price into Neon DB matching the updated schema."""
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        print("DATABASE_URL not set. Skipping log.")
+        return
+
+    try:
+        with psycopg.connect(db_url) as conn:
+            with conn.cursor() as cursor:
+                insert_query = """
+                    INSERT INTO prediction_logs 
+                    (year, manufacturer, model, condition, cylinders, fuel, odometer, title_status, transmission, drive, size, type, estimated_price)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+                """
+                cursor.execute(insert_query, (
+                    int(car.year),
+                    car.manufacturer.lower(),
+                    car.model.lower(),
+                    car.condition,
+                    car.cylinders,
+                    car.fuel,
+                    int(car.odometer),
+                    car.title_status,
+                    car.transmission,
+                    car.drive,
+                    car.size,
+                    car.type,
+                    php_price
+                ))
+                conn.commit()
+                print("Prediction successfully logged to Neon DB.")
+    except Exception as e:
+        print(f"Failed to log prediction to DB: {e}")
 
 # 5. Routes =============================================================================================================================
 @app.get("/")
@@ -110,6 +145,9 @@ def predict_car_value(car: CarInput):
     # Run single prediction inference
     raw_usd_prediction = float(model.predict(input_df)[0])
     php_estimate = round(raw_usd_prediction * USD_TO_PHP)
+
+    # log car specs and price estimate to db
+    log_prediction_to_db(car, php_estimate)
 
     # 10% tolerance boundary calculation
     min_value = round(php_estimate * 0.90)
