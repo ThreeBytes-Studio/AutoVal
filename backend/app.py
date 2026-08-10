@@ -124,11 +124,13 @@ def log_prediction_to_db(car: CarInput, php_price: float):
 def check_status():
     return {"status": "success", "message": "FastAPI engine online."}
 
-
 @app.get("/chart-data")
 def fetch_chart_data():
     try:
         data = chart_mapper.fetch_all_data()
+        # Convert USD prices to PHP for display
+        for row in data:
+            row["price"] = round(row["price"] * USD_TO_PHP)
         return {"success": True, "data": data}
     except Exception as e:
         print(f"Neon DB Error: {e}")
