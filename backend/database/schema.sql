@@ -3,17 +3,37 @@
 
 -- Table for training data
 CREATE TABLE IF NOT EXISTS historical_car_listing (
-    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    brand VARCHAR(50) NOT NULL,
-    model VARCHAR(50) NOT NULL,
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     year INTEGER NOT NULL,
-    price INTEGER NOT NULL
+    manufacturer TEXT NOT NULL,
+    model TEXT NOT NULL,
+    condition TEXT,
+    cylinders TEXT,
+    fuel TEXT NOT NULL,
+    odometer BIGINT NOT NULL,
+    title_status TEXT NOT NULL,
+    transmission TEXT NOT NULL,
+    drive TEXT,
+    size TEXT,
+    type TEXT,
+    price NUMERIC(13,2) NOT NULL
 );
 
 -- Table for new input data
 CREATE TABLE IF NOT EXISTS prediction_logs (
-    id BIGSERIAL PRIMARY KEY,
-    input_brand VARCHAR(50) NOT NULL,
-    input_model VARCHAR(50) NOT NULL,
-    input_year INTEGER NOT NULL
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    year INTEGER NOT NULL,
+    manufacturer TEXT NOT NULL,
+    model TEXT NOT NULL,
+    condition TEXT,
+    cylinders TEXT,
+    fuel TEXT NOT NULL,
+    odometer BIGINT NOT NULL,
+    title_status TEXT NOT NULL,
+    transmission TEXT NOT NULL,
+    drive TEXT,
+    size TEXT,
+    type TEXT,
+    estimated_price NUMERIC(13,2) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
