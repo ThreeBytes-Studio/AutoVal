@@ -3,5 +3,8 @@ uvicorn
 pydantic
 joblib
 numpy
+pandas
+scikit-learn
+xgboost
 psycopg[binary]
 python-dotenv

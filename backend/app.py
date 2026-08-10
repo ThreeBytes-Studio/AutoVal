@@ -1,26 +1,30 @@
-import sys
 import os
-import math
+import sys
 from pathlib import Path
+
+import joblib
+import pandas as pd
 from dotenv import load_dotenv
-
-# Load .env variables (DATABASE_URL)
-env_path = Path(__file__).parent / ".env"
-load_dotenv(env_path)
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-# import joblib         # Uncomment when model file is ready
-# import numpy as np    # Uncomment when model file is ready
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "database"))
+# 1. System Paths & Environment Setup ===================================================================================================
+BASE_DIR = Path(__file__).parent
+load_dotenv(BASE_DIR / ".env")
+
+# Ensure local modules (model transformers and database adapters) are on sys.path
+for path in [BASE_DIR / "model", BASE_DIR / "database"]:
+    if str(path) not in sys.path:
+        sys.path.append(str(path))
+
 import chart_mapper
+import custom_transformers  # Required for joblib model unpickling
 
-app = FastAPI()
+# 2. FastAPI Setup ======================================================================================================================
+app = FastAPI(title="AutoVal ML API")
 
-# CORS configuration for backend security
-origins = [
+ALLOWED_ORIGINS = [
     "http://localhost:5500",
     "http://127.0.0.1:5500",
     "http://localhost:5173",
@@ -29,34 +33,63 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
+USD_TO_PHP = 58.5
+
+# 3. Schemas & ML Model Loading =========================================================================================================
 class CarInput(BaseModel):
-    brand: str
-    year: str or int or None = None
-    mileage: str or int or None = None
-    transmission: str or None = None
-    condition: str or None = None
+    manufacturer: str
+    model: str
+    year: int
+    odometer: int
+    condition: str | None = "good"
+    cylinders: str | None = "4 cylinders"
+    fuel: str | None = "gas"
+    title_status: str | None = "clean"
+    transmission: str | None = "automatic"
+    drive: str | None = "fwd"
+    size: str | None = "mid-size"
+    type: str | None = "sedan"
 
-# Uncomment when model file is ready
-# try:
-#     model = joblib.load("car_model.joblib")
-# except Exception as e:
-#     print(f"ML Engine offline: {e}")
-#     model = None
 
-@app.get("/")
-def check_status():
+try:
+    model = joblib.load(BASE_DIR / "model" / "car_price_pipeline.joblib")
+    print("ML Engine successfully initialized and online.")
+except Exception as e:
+    print(f"ML Engine offline: {e}")
+    model = None
+
+
+# 4. Helper Functions ===================================================================================================================
+def build_feature_dict(car: CarInput, odometer_override: int | None = None) -> dict:
+    """Helper to standardize Pandas DataFrame input format across endpoints."""
     return {
-        "status": "success",
-        "message": "FastAPI engine matches server routing configuration."
+        "manufacturer": car.manufacturer,
+        "model": car.model,
+        "year": int(car.year),
+        "odometer": odometer_override if odometer_override is not None else int(car.odometer),
+        "condition": car.condition or "good",
+        "cylinders": car.cylinders or "4 cylinders",
+        "fuel": car.fuel or "gas",
+        "title_status": car.title_status or "clean",
+        "transmission": car.transmission or "automatic",
+        "drive": car.drive or "fwd",
+        "size": car.size or "mid-size",
+        "type": car.type or "sedan",
     }
 
-# Endpoint for Neon data
+
+# 5. Routes =============================================================================================================================
+@app.get("/")
+def check_status():
+    return {"status": "success", "message": "FastAPI engine online."}
+
+
 @app.get("/chart-data")
 def fetch_chart_data():
     try:
@@ -65,139 +98,75 @@ def fetch_chart_data():
     except Exception as e:
         print(f"Neon DB Error: {e}")
         return {"success": False, "error": str(e), "data": []}
-    
+
+
 @app.post("/predict")
 def predict_car_value(car: CarInput):
-    current_year = 2026
-    car_year = int(car.year)
-    car_mileage = int(car.mileage)
-    age = max(0, current_year - car_year)
+    if model is None:
+        return {"success": False, "message": "ML Model unavailable"}
 
-    # Uncomment when model file is ready
-    # if model is not None:
-    #     features = np.array([[car.brand, car_year, car_mileage, car.transmission, car.condition]])
-    #     final_estimate = round(float(model.predict(features)[0]))
-    #     
-    #     return {
-    #         "success": True,
-    #         "brand": f"{car.brand.capitalize()} Vehicle",
-    #         "year": car_year,
-    #         "estimatedValue": f"${final_estimate:,}",
-    #         "dealMetrics": {"status": "fair_price", "label": "ML Predicted Market Price"},
-    #         "marketInsights": {
-    #             "averagePriceForYear": "Calculated by ML",
-    #             "depreciationRate": "Determined by ML data drift",
-    #             "mileageImpact": " factored into ML weights"
-    #         }
-    #     }
-
-    # Temporary formulas start (Delete when model file is ready) ===================================================================
-    floor_price = 4000 if car.brand == 'luxury' else 2000
-
-    # Vintage tier bypass calculation
-    if age > 20:
-        return {
-            "success": True,
-            "brand": f"{car.brand.capitalize()} Classic",
-            "year": car_year,
-            "estimatedValue": f"${floor_price:,}",
-            "dealMetrics": {
-                "status": "fair_price",
-                "label": "Vintage / Floor Value Status"
-            },
-            "marketInsights": {
-                "averagePriceForYear": f"${floor_price:,}",
-                "depreciationRate": "0% (Fully Depreciated Value Tier)",
-                "mileageImpact": "Minimal (Value anchored to vehicle scrap/parts baseline)"
-            }
-        }
-
-    base_price = 30000
-    annual_depreciation_rate = 0.08
-    mileage_penalty_per_thousand = 50
-
-    if car.brand == 'luxury':
-        base_price = 65000
-        annual_depreciation_rate = 0.14
-        mileage_penalty_per_thousand = 90
-    elif car.brand == 'commuter':
-        base_price = 26000
-        annual_depreciation_rate = 0.07
-        mileage_penalty_per_thousand = 40
-
-    baseline_price_for_year = round(base_price * math.pow((1 - annual_depreciation_rate), age))
-
-    valued_price = baseline_price_for_year
-
-    if car.transmission == 'manual':
-        valued_price = valued_price * 1.05 if car.brand == 'luxury' else valued_price * 0.93
-
-    mileage_penalty = (car_mileage / 1000) * mileage_penalty_per_thousand
-    valued_price = valued_price - mileage_penalty
-
-    if car.condition == 'excellent': valued_price *= 1.12
-    elif car.condition == 'good': valued_price *= 1.00
-    elif car.condition == 'fair': valued_price *= 0.85
-    elif car.condition == 'poor': valued_price *= 0.65
-
-    final_estimate = round(max(floor_price, valued_price))
-
-    deal_rating = "fair_price"
-    deal_label = "Fair Market Price"
+    input_df = pd.DataFrame([build_feature_dict(car)])
     
-    variance_percent = (final_estimate - baseline_price_for_year) / baseline_price_for_year
+    # Run single prediction inference
+    raw_usd_prediction = float(model.predict(input_df)[0])
+    php_estimate = round(raw_usd_prediction * USD_TO_PHP)
 
-    if variance_percent > 0.08:
-        deal_rating = "great_deal"
-        deal_label = "High-Value Asset (Excellent Condition / Low Wear)"
-    elif variance_percent < -0.15:
-        deal_rating = "overpriced_risk"
-        deal_label = "Below Market Average (High Wear Risk)"
-    # Temporary formulas end (Delete when model file is ready) ===================================================================
+    # 10% tolerance boundary calculation
+    min_value = round(php_estimate * 0.90)
+    max_value = round(php_estimate * 1.10)
 
     return {
         "success": True,
-        "brand": f"{car.brand.capitalize()} Vehicle",
-        "year": car_year,
-        "estimatedValue": f"${final_estimate:,}",
-        "dealMetrics": {
-            "status": deal_rating,
-            "label": deal_label
+        "brand": f"{car.manufacturer.title()} {car.model.title()}",
+        "year": int(car.year),
+        "estimatedValue": f"₱{php_estimate:,}",
+        "range": {
+            "min": f"₱{min_value:,}",
+            "max": f"₱{max_value:,}",
         },
-        "marketInsights": {
-            "averagePriceForYear": f"${baseline_price_for_year:,}",
-            "depreciationRate": f"{round(annual_depreciation_rate * 100)}% annually",
-            "mileageImpact": f"-${round(mileage_penalty):,}"
-        }
+        "rawEstimates": {
+            "min": min_value,
+            "target": php_estimate,
+            "max": max_value,
+        },
+        "dealMetrics": {"status": "fair_price", "label": "ML Predicted Market Price"},
     }
+
 
 @app.post("/market-trends")
 def calculate_trends(car: CarInput):
-    # Temporary formulas start (Delete when model file is ready) ===================================================================
-    # current_year = 2026
-    # car_year = int(car.year) if car.year else 2026
-    # age = max(0, current_year - car_year)
-    
-    starting_price = 65000 if car.brand == 'luxury' else 26000
-    if car.condition == 'excellent': starting_price *= 1.12
-    elif car.condition == 'poor': starting_price *= 0.65
-    
-    if car.transmission == 'manual':
-        starting_price = starting_price * 1.05 if car.brand == 'luxury' else starting_price * 0.93
-
-    decay_factor = 0.82 if car.brand == 'luxury' else 0.90 
+    mileage_steps = [10000, 30000, 50000, 70000, 90000, 110000]
     mileage_labels = ["10k mi", "30k mi", "50k mi", "70k mi", "90k mi", "110k mi+"]
-    
-    depreciation_prices = []
-    for index, _ in enumerate(mileage_labels):
-        step_penalty = math.pow(decay_factor, index)
-        baseline_floor = 4000 if car.brand == 'luxury' else 2000
-        calculated_step = round(max(baseline_floor, starting_price * step_penalty))
-        depreciation_prices.append(calculated_step)
-    # Temporary formulas end (Delete when model file is ready) ===================================================================
 
-    return {
-        "success": True,
-        "mileageLabels": mileage_labels,
-        "depreciationPrices": depreciation_prices
-    }
+    if model is None:
+        return {
+            "success": False,
+            "message": "ML Model unavailable",
+            "mileageLabels": mileage_labels,
+            "depreciationPrices": [],
+        }
+
+    try:
+        # Build batch inference dataframe with varying odometer values
+        batch_rows = [build_feature_dict(car, odo) for odo in mileage_steps]
+        input_df = pd.DataFrame(batch_rows)
+
+        raw_predictions = model.predict(input_df)
+        depreciation_prices = [
+            max(0, round(float(price) * USD_TO_PHP)) for price in raw_predictions
+        ]
+
+        return {
+            "success": True,
+            "mileageLabels": mileage_labels,
+            "depreciationPrices": depreciation_prices,
+        }
+
+    except Exception as e:
+        print(f"ML Trend Calculation Error: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "mileageLabels": mileage_labels,
+            "depreciationPrices": [],
+        }
