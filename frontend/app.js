@@ -11,60 +11,28 @@ const BACKEND_URL = (window.location.hostname === 'localhost' || window.location
 // Define available visual themes for the application interface
 const themes = ['dark', 'dark-soft', 'light', 'midnight']
 
-// Retrieve saved theme preference from local storage if previously selected
-const savedTheme = localStorage.getItem('user-theme')
+let currentThemeIndex = themes.indexOf(document.documentElement.getAttribute('data-theme'))
+if (currentThemeIndex === -1) currentThemeIndex = 0
 
-// Determine initial theme index based on local storage or default dataset attribute
-let currentThemeIndex = themes.includes(savedTheme) 
-    ? themes.indexOf(savedTheme) 
-    : (themes.indexOf(document.body.dataset.theme) === -1 ? 0 : themes.indexOf(document.body.dataset.theme))
-
-// Apply initial active theme attribute to HTML <body> tag
-document.body.dataset.theme = themes[currentThemeIndex]
-
-// Handle user clicking the theme toggle button to switch modes
 const colorToggle = document.getElementById('color-toggle')
-colorToggle.addEventListener('click', () => {
-    // Cycle sequentially through theme array
+colorToggle?.addEventListener('click', () => {
     currentThemeIndex = (currentThemeIndex + 1) % themes.length
     const nextTheme = themes[currentThemeIndex]
     
-    // Apply selected theme to body attribute and persist to local storage
-    document.body.dataset.theme = nextTheme
+    // Changing data-theme on <html> triggers the MutationObserver below
+    document.documentElement.setAttribute('data-theme', nextTheme)
     localStorage.setItem('user-theme', nextTheme)
-    
-    // Read dynamic CSS CSS custom variables for updating chart styling on theme change
-    const freshFgMuted = getComputedStyle(document.body).getPropertyValue('--fg-muted').trim()
-    const freshBorder = getComputedStyle(document.body).getPropertyValue('--border').trim()
-    const freshAccent = getComputedStyle(document.body).getPropertyValue('--chart-1').trim()
-
-    // Dynamically re-render depreciation chart palette if instance exists
-    if (myChart) {
-        myChart.options.plugins.legend.labels.color = freshFgMuted
-        
-        myChart.options.scales.x.ticks.color = freshFgMuted
-        myChart.options.scales.x.grid.color = freshBorder
-        
-        myChart.options.scales.y.ticks.color = freshFgMuted
-        myChart.options.scales.y.grid.color = freshBorder
-
-        myChart.data.datasets[0].borderColor = freshAccent
-        myChart.data.datasets[0].backgroundColor = `${freshAccent}1A`
-        
-        myChart.update()
-    }
 })
-
 
 // 3. CHART INITIALIZATION & MANAGEMENT =================================================================================================
 
-// Global variables to store Chart.js instances for dynamic updates
 let myChart = null
 let neonChart = null
 
 // Helper function to extract current CSS variable theme colors for charts
 function getThemeColors() {
-    const style = getComputedStyle(document.body)
+    // Read from document.documentElement (html root) where data-theme is set
+    const style = getComputedStyle(document.documentElement)
     return {
         fgMuted: style.getPropertyValue('--fg-muted').trim() || '#94a3b8',
         border: style.getPropertyValue('--border').trim() || '#334155',
@@ -131,6 +99,8 @@ function initCharts() {
                     label: 'Historical Listings Average Price (Neon DB)',
                     data: [],
                     backgroundColor: `${colors.chart2}33`,
+                    hoverBackgroundColor: `${colors.chart2}66`,
+                    hoverBorderColor: colors.chart2,
                     borderColor: colors.chart2,
                     borderWidth: 2,
                     borderRadius: 6
@@ -186,15 +156,20 @@ function updateChartColors() {
             chart.data.datasets[0].backgroundColor = chart.config.type === 'line' 
                 ? `${accentColor}1A` 
                 : `${accentColor}33`
+                
+            chart.data.datasets[0].hoverBorderColor = accentColor
+            chart.data.datasets[0].hoverBackgroundColor = chart.config.type === 'line'
+                ? `${accentColor}40`
+                : `${accentColor}66`
         }
-        chart.update()
+        chart.update('active')
     }
 
     refreshChart(myChart, colors.chart1)
     refreshChart(neonChart, colors.chart2)
 }
 
-// Observe attribute changes on <body> to re-render chart themes immediately when theme buttons are clicked
+// Observe attribute changes on <html> to re-render all chart themes immediately
 const themeObserver = new MutationObserver(mutations => {
     mutations.forEach(m => {
         if (m.attributeName === 'data-theme') {
@@ -202,7 +177,7 @@ const themeObserver = new MutationObserver(mutations => {
         }
     })
 })
-themeObserver.observe(document.body, { attributes: true })
+themeObserver.observe(document.documentElement, { attributes: true })
 
 // Call chart instantiation when script loads
 initCharts()
@@ -235,15 +210,24 @@ const carModelsByBrand = {
     porsche: ["911", "cayenne", "macan", "taycan", "panamera", "718 boxster"],
     other: ["other"]
 }
-
 const brandSelect = document.getElementById("brand")
 const modelSelect = document.getElementById("model")
 
-// Event listener to automatically populate model dropdown options whenever manufacturer is changed
-brandSelect.addEventListener("change", (e) => {
-    const selectedBrand = e.target.value.toLowerCase()
+// Function to populate model options based on current brandSelect value
+function updateModelOptions() {
+    const selectedBrand = brandSelect.value.toLowerCase()
+    
+    // If no brand is selected yet, reset to default state
+    if (!selectedBrand) {
+        modelSelect.innerHTML = '<option value="" disabled selected>Select a model</option>'
+        return
+    }
+
     const models = carModelsByBrand[selectedBrand] || ["other"]
     
+    // Remember currently selected model (if browser restored it)
+    const currentSelectedModel = modelSelect.value
+
     // Clear existing option elements
     modelSelect.innerHTML = '<option value="" disabled selected>Select a model</option>'
     
@@ -254,32 +238,54 @@ brandSelect.addEventListener("change", (e) => {
         
         // Format model strings with capitalized first letter
         const formattedName = model.charAt(0).toUpperCase() + model.slice(1)
-        
         option.textContent = formattedName
+
+        // If the browser previously selected this model on refresh, keep it selected
+        if (model === currentSelectedModel) {
+            option.selected = true
+        }
+
         modelSelect.appendChild(option)
     })
-})
+}
 
+// 1. Fire on user interaction
+brandSelect.addEventListener("change", updateModelOptions)
+
+// 2. Fire immediately on page load to catch browser restored values
+document.addEventListener("DOMContentLoaded", updateModelOptions)
+// Also run immediately in case DOM is already parsed when script runs
+if (brandSelect.value) {
+    updateModelOptions()
+}
 
 // 5. VALUATION FORM SUBMISSION & API HANDLER ===========================================================================================
 
 const carForm = document.getElementById('carForm')
 const result = document.getElementById('result')
 
-// Utility helper to create a artificial delay for UX feel during async operations
+// Utility helper to create an artificial delay for UX feel during async operations
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 // Main form submission listener for predicting vehicle prices
 carForm.addEventListener('submit', async (e) => {
     e.preventDefault()
     
-    // Collect values from HTML form inputs
+    // Collect required values from HTML form inputs
     const brand = document.getElementById('brand').value
     const model = document.getElementById('model').value
     const year = parseInt(document.getElementById('year').value)
     const mileage = parseInt(document.getElementById('mileage').value)
     const transmission = document.getElementById('transmission').value
     const condition = document.getElementById('condition').value
+
+    // Collect optional advanced inputs (or fall back to 'Unknown')
+    const fuel = document.getElementById('fuel')?.value || "Unknown"
+    const title_status = document.getElementById('title_status')?.value || "Unknown"
+    const drive = document.getElementById('drive')?.value || "Unknown"
+    const type = document.getElementById('type')?.value || "Unknown"
+    const size = document.getElementById('size')?.value || "Unknown"
+    const cylinders = document.getElementById('cylinders')?.value || "Unknown"
 
     // Frontend validation logic for year and odometer input sanity checks
     const currentYear = new Date().getFullYear()
@@ -304,13 +310,13 @@ carForm.addEventListener('submit', async (e) => {
         transmission: transmission,
         condition: condition,
         
-        // Baseline fallback parameters required by the ML model pipeline
-        cylinders: "4 cylinders",
-        drive: "fwd",
-        size: "mid-size",
-        type: "sedan",
-        fuel: "gas",
-        title_status: "clean"
+        // Optional advanced specs (passes selected option or 'Unknown' default)
+        cylinders: cylinders,
+        drive: drive,
+        size: size,
+        type: type,
+        fuel: fuel,
+        title_status: title_status
     }
     
     result.innerHTML = '<em>Connecting to server..</em>'
@@ -351,37 +357,22 @@ carForm.addEventListener('submit', async (e) => {
         `
 
         // Trigger loading and rendering of line chart depreciation trends
-        loadMarketChart(brand, year, mileage, transmission, condition)
+        loadMarketChart(payload)
     } catch (error) {
         console.error('Fetch operation error:', error)
         result.innerHTML = `<span style="color: red"><strong>Error:</strong> Could not reach backend server. Did you start app.py in your terminal?</span>`
     }
 })
 
-
 // 6. CHART DATA API FETCHING LOGIC =====================================================================================================
 
 // Helper function called after prediction to fetch and plot market trend depreciation data
-async function loadMarketChart(brand, year, mileage, transmission, condition) {
+async function loadMarketChart(payload) {
     try {
         const response = await fetch(`${BACKEND_URL}/market-trends`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                manufacturer: brand,
-                year: year,
-                odometer: mileage,
-                transmission: transmission,
-                condition: condition,
-                model: "unknown",
-
-                cylinders: "6 cylinders",
-                drive: "fwd",
-                size: "mid-size",
-                type: "sedan",
-                fuel: "gas",
-                title_status: "clean"
-            })
+            body: JSON.stringify(payload)
         })
         
         const data = await response.json()

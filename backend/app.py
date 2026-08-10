@@ -47,14 +47,14 @@ class CarInput(BaseModel):
     model: str
     year: int
     odometer: int
-    condition: str | None = "good"
-    cylinders: str | None = "4 cylinders"
-    fuel: str | None = "gas"
-    title_status: str | None = "clean"
+    condition: str | None = "Unknown"
+    cylinders: str | None = "Unknown"
+    fuel: str | None = "Unknown"
+    title_status: str | None = "Unknown"
     transmission: str | None = "automatic"
-    drive: str | None = "fwd"
-    size: str | None = "mid-size"
-    type: str | None = "sedan"
+    drive: str | None = "Unknown"
+    size: str | None = "Unknown"
+    type: str | None = "Unknown"
 
 
 try:
@@ -73,14 +73,14 @@ def build_feature_dict(car: CarInput, odometer_override: int | None = None) -> d
         "model": car.model,
         "year": int(car.year),
         "odometer": odometer_override if odometer_override is not None else int(car.odometer),
-        "condition": car.condition or "good",
-        "cylinders": car.cylinders or "4 cylinders",
-        "fuel": car.fuel or "gas",
-        "title_status": car.title_status or "clean",
+        "condition": car.condition or "Unknown",
+        "cylinders": car.cylinders or "Unknown",
+        "fuel": car.fuel or "Unknown",
+        "title_status": car.title_status or "Unknown",
         "transmission": car.transmission or "automatic",
-        "drive": car.drive or "fwd",
-        "size": car.size or "mid-size",
-        "type": car.type or "sedan",
+        "drive": car.drive or "Unknown",
+        "size": car.size or "Unknown",
+        "type": car.type or "Unknown",
     }
 
 
