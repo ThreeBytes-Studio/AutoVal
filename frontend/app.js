@@ -264,9 +264,6 @@ if (brandSelect.value) {
 const carForm = document.getElementById('carForm')
 const result = document.getElementById('result')
 
-// Utility helper to create an artificial delay for UX feel during async operations
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
-
 // Main form submission listener for predicting vehicle prices
 carForm.addEventListener('submit', async (e) => {
     e.preventDefault()
@@ -320,8 +317,6 @@ carForm.addEventListener('submit', async (e) => {
     }
     
     result.innerHTML = '<em>Connecting to server..</em>'
-
-    await delay(450)
 
     try {
         // Send POST request to FastAPI backend predict route
@@ -407,7 +402,7 @@ async function loadNeonDatabaseChart() {
         const brandCounts = {}
 
         rawData.forEach(car => {
-            const brand = car.brand
+            const brand = car.manufacturer
             const price = car.price
 
             if (!brandPrices[brand]) {
