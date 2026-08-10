@@ -3,19 +3,7 @@
 
 -- Table for training data
 CREATE TABLE IF NOT EXISTS historical_car_listing (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    year INTEGER NOT NULL,
     manufacturer TEXT NOT NULL,
-    model TEXT NOT NULL,
-    condition TEXT,
-    cylinders TEXT,
-    fuel TEXT NOT NULL,
-    odometer BIGINT NOT NULL,
-    title_status TEXT NOT NULL,
-    transmission TEXT NOT NULL,
-    drive TEXT,
-    size TEXT,
-    type TEXT,
     price NUMERIC(13,2) NOT NULL
 );
 

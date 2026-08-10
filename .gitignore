@@ -2,6 +2,7 @@
 __pycache__/
 *.pyc
 .venv/
+seed.py
 
 # Spreadsheet files
 *.csv
