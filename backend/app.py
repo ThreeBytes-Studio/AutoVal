@@ -2,13 +2,14 @@ import os
 import sys
 from pathlib import Path
 
+import chart_mapper
 import joblib
 import pandas as pd
+import psycopg
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import psycopg
 
 # 1. System Paths & Environment Setup ===================================================================================================
 BASE_DIR = Path(__file__).parent
@@ -19,8 +20,6 @@ for path in [BASE_DIR / "model", BASE_DIR / "database"]:
     if str(path) not in sys.path:
         sys.path.append(str(path))
 
-import chart_mapper
-import custom_transformers  # Required for joblib model unpickling
 
 # 2. FastAPI Setup ======================================================================================================================
 app = FastAPI(title="AutoVal ML API")
@@ -41,6 +40,7 @@ app.add_middleware(
 )
 
 USD_TO_PHP = 58.5
+
 
 # 3. Schemas & ML Model Loading =========================================================================================================
 class CarInput(BaseModel):
@@ -84,6 +84,7 @@ def build_feature_dict(car: CarInput, odometer_override: int | None = None) -> d
         "type": car.type or "Unknown",
     }
 
+
 def log_prediction_to_db(car: CarInput, php_price: float):
     """Inserts user input specs and estimated price into Neon DB matching the updated schema."""
     db_url = os.getenv("DATABASE_URL")
@@ -99,30 +100,35 @@ def log_prediction_to_db(car: CarInput, php_price: float):
                     (year, manufacturer, model, condition, cylinders, fuel, odometer, title_status, transmission, drive, size, type, estimated_price)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
                 """
-                cursor.execute(insert_query, (
-                    int(car.year),
-                    car.manufacturer.lower(),
-                    car.model.lower(),
-                    car.condition,
-                    car.cylinders,
-                    car.fuel,
-                    int(car.odometer),
-                    car.title_status,
-                    car.transmission,
-                    car.drive,
-                    car.size,
-                    car.type,
-                    php_price
-                ))
+                cursor.execute(
+                    insert_query,
+                    (
+                        int(car.year),
+                        car.manufacturer.lower(),
+                        car.model.lower(),
+                        car.condition,
+                        car.cylinders,
+                        car.fuel,
+                        int(car.odometer),
+                        car.title_status,
+                        car.transmission,
+                        car.drive,
+                        car.size,
+                        car.type,
+                        php_price,
+                    ),
+                )
                 conn.commit()
                 print("Prediction successfully logged to Neon DB.")
     except Exception as e:
         print(f"Failed to log prediction to DB: {e}")
 
+
 # 5. Routes =============================================================================================================================
 @app.get("/")
 def check_status():
     return {"status": "success", "message": "FastAPI engine online."}
+
 
 @app.get("/chart-data")
 def fetch_chart_data():
@@ -143,7 +149,7 @@ def predict_car_value(car: CarInput):
         return {"success": False, "message": "ML Model unavailable"}
 
     input_df = pd.DataFrame([build_feature_dict(car)])
-    
+
     # Run single prediction inference
     raw_usd_prediction = float(model.predict(input_df)[0])
     php_estimate = round(raw_usd_prediction * USD_TO_PHP)
