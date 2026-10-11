@@ -20,5 +20,8 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install dependency
+        run: pip install ruff
+
       - name: Check Formatting
-        run: uv run ruff format --check .
+        run: python -m ruff format --check .
