@@ -19,3 +19,4 @@ select = [
     "UP",
     "B",
 ]
+ignore = ["E501"]
