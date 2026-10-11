@@ -71,7 +71,7 @@ tomli_w==1.2.0
 typer==0.27.1
 typing-inspection==0.4.2
 typing_extensions==4.16.0
-urllib3==2.7.0
+urllib3==2.8.0
 uvicorn==0.52.1
 uvloop==0.22.1
 watchfiles==1.2.0
