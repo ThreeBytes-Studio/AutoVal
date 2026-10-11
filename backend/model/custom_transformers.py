@@ -10,15 +10,15 @@ class RareManufacturerGrouper(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y=None):
         # Learn which manufacturers are rare from the training data only (prevents data leakage)
-        counts = X['manufacturer'].value_counts()
+        counts = X["manufacturer"].value_counts()
         self.rare_manufacturers_ = counts[counts < self.threshold].index
         return self
 
     def transform(self, X):
         X = X.copy()
         # Replace rare manufacturers with the string 'other'
-        X['manufacturer'] = X['manufacturer'].where(
-            ~X['manufacturer'].isin(self.rare_manufacturers_), 'other'
+        X["manufacturer"] = X["manufacturer"].where(
+            ~X["manufacturer"].isin(self.rare_manufacturers_), "other"
         )
         return X
 
@@ -28,9 +28,9 @@ class ModelTargetEncoder(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y):
         temp = X.copy()
-        temp['price'] = y
+        temp["price"] = y
         # Calculate the average price for each unique car model using training data
-        self.model_target_map_ = temp.groupby('model')['price'].mean()
+        self.model_target_map_ = temp.groupby("model")["price"].mean()
         # Save overall average price as a fallback for unseen models during inference
         self.overall_avg_ = y.mean()
         return self
@@ -38,9 +38,9 @@ class ModelTargetEncoder(BaseEstimator, TransformerMixin):
     def transform(self, X):
         X = X.copy()
         # Map the car model names to their learned average prices
-        X['model_encoded'] = X['model'].map(self.model_target_map_)
+        X["model_encoded"] = X["model"].map(self.model_target_map_)
         # Fill missing/unknown models with the overall dataset average
-        X['model_encoded'] = X['model_encoded'].fillna(self.overall_avg_)
+        X["model_encoded"] = X["model_encoded"].fillna(self.overall_avg_)
         # Drop the raw text column since it has been successfully encoded into a number
-        X = X.drop(columns=['model'])
+        X = X.drop(columns=["model"])
         return X

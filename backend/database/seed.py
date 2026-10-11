@@ -68,7 +68,7 @@ def seed_database():
     # Database ingestion
     engine = get_database_engine()
     print(f"Writing {len(sample_df):,} records into database table '{TARGET_TABLE}'...")
-    
+
     sample_df.to_sql(
         TARGET_TABLE,
         con=engine,
