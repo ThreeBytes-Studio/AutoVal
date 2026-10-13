@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 from pathlib import Path
@@ -10,6 +11,14 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+# Logging config
+logging.basicConfig(
+    level=logging.INFO,
+    format="{asctime} | [{levelname}] | {name} ({filename}:{lineno}): {message}",
+    style="{",
+)
+logger = logging.getLogger(__name__)
 
 # 1. System Paths & Environment Setup ===================================================================================================
 BASE_DIR = Path(__file__).parent
@@ -138,9 +147,9 @@ def fetch_chart_data():
         for row in data:
             row["price"] = round(row["price"] * USD_TO_PHP)
         return {"success": True, "data": data}
-    except Exception as e:
-        print(f"Neon DB Error: {e}")
-        return {"success": False, "error": str(e), "data": []}
+    except Exception:
+        logger.exception("Failed to fetch data")
+        return {"success": False, "error": "Unable to retrieve data. Please try again later.", "data": []}
 
 
 @app.post("/predict")
@@ -208,11 +217,11 @@ def calculate_trends(car: CarInput):
             "depreciationPrices": depreciation_prices,
         }
 
-    except Exception as e:
-        print(f"ML Trend Calculation Error: {e}")
+    except Exception:
+        logger.exception("ML trend calculation failed")
         return {
             "success": False,
-            "error": str(e),
+            "error": "Unable to calculate ML trends.",
             "mileageLabels": mileage_labels,
             "depreciationPrices": [],
         }
