@@ -1,12 +1,15 @@
+import decimal
 import logging
 import os
 import sys
+from decimal import Decimal
 from pathlib import Path
 
 import chart_mapper
 import joblib
 import pandas as pd
 import psycopg
+import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -48,7 +51,56 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-USD_TO_PHP = 58.5
+
+def get_exchange_rate() -> Decimal:
+    RATE_URL = "https://api.frankfurter.dev/v2/rate/usd/php"
+
+    try:
+        response = requests.get(RATE_URL, timeout=10)
+        response.raise_for_status()
+
+        data = response.json()
+
+        # If received other than dictionary
+        if not isinstance(data, dict):
+            raise ValueError("Expected a JSON object")
+
+        # Convert to string then Decimal to avoid floating-point precision error
+        return Decimal(str(data["rate"]))
+
+    except requests.exceptions.HTTPError as exc:
+        status = exc.response.status_code if exc.response else None
+
+        if status == 422:
+            logger.error("Invalid exchange rate request (422)")
+        elif status == 404:
+            logger.error("Exchange rate not found (404)")
+        elif status == 503:
+            logger.error("Exchange rate service unavailable (503)")
+        else:
+            logging.error("Exchange rate API returned HTTP %s", status)
+
+    except requests.exceptions.Timeout:
+        logger.warning("Exchange rate API request timed out")
+
+    except requests.exceptions.ConnectionError:
+        logger.warning("Could not connect to exchange rate API")
+
+    except requests.exceptions.RequestException:
+        logger.exception("Unexpected HTTP request failure")
+
+    except (ValueError, KeyError, TypeError, decimal.InvalidOperation):
+        logger.exception("Invalid exchange rate API response")
+
+    except Exception:
+        logger.exception("Failed to retrieve or process exchange rate")
+
+    # Return default value if API fails
+    return Decimal("58.00")
+
+
+# Fetch latest USD To PHP latest exchange rate
+USD_TO_PHP = get_exchange_rate()
 
 
 # 3. Schemas & ML Model Loading =========================================================================================================
@@ -149,7 +201,11 @@ def fetch_chart_data():
         return {"success": True, "data": data}
     except Exception:
         logger.exception("Failed to fetch data")
-        return {"success": False, "error": "Unable to retrieve data. Please try again later.", "data": []}
+        return {
+            "success": False,
+            "error": "Unable to retrieve data. Please try again later.",
+            "data": [],
+        }
 
 
 @app.post("/predict")
