@@ -28,8 +28,8 @@ license-expression==30.4.4
 markdown-it-py==4.2.0
 MarkupSafe==3.0.4
 mdurl==0.1.2
-msgpack==1.2.3
-narwhals==2.27.1
+msgpack==1.2.4
+narwhals==2.28.0
 numpy==2.5.4
 nvidia-nccl-cu13==2.32.3
 packageurl-python==0.17.6
@@ -38,13 +38,13 @@ pandas==3.1.0
 pip-requirements-parser==32.0.1
 pip_api==0.0.35
 pip_audit==2.10.1
-platformdirs==4.13.5
+platformdirs==4.14.0
 psycopg==3.3.6
 psycopg-binary==3.3.6
 py-serializable==2.1.0
 pydantic==2.14.1
 pydantic-extra-types==2.11.1
-pydantic-settings==2.16.1
+pydantic-settings==2.16.2
 pydantic_core==2.50.1
 Pygments==2.21.0
 pyparsing==3.3.3
@@ -56,7 +56,7 @@ requests==2.34.2
 rich==15.0.0
 rich-toolkit==0.20.6
 rignore==0.8.1
-ruff==0.17.2
+ruff==0.17.3
 scikit-learn==1.9.1
 scipy==1.18.1
 sentry-sdk==2.73.0
@@ -64,7 +64,7 @@ shellingham==1.5.4
 six==1.17.0
 sortedcontainers==2.4.0
 SQLAlchemy==2.1.6
-starlette==1.9.0
+starlette==1.10.0
 threadpoolctl==3.7.0
 tomli==2.5.0
 tomli_w==1.2.0
